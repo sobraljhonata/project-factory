@@ -1,0 +1,49 @@
+# Exemplo de endurecimento para produção (copie trechos para terraform.tfvars).
+# 1) Solicite/emita certificado ACM na MESMA região do ALB e valide (DNS ou email).
+# 2) Preencha media_bucket_name, s3_public_base_url, jwt_* e demais segredos reais (não commitar).
+
+aws_region   = "us-east-1"
+project_name = "{{PROJECT_SLUG}}"
+environment  = "prod"
+
+media_bucket_name  = "{{PROJECT_SLUG}}-media-PROD_REPLACE"
+s3_public_base_url = "https://{{PROJECT_SLUG}}-media-PROD_REPLACE.s3.us-east-1.amazonaws.com"
+
+jwt_secret         = "REPLACE_MIN_16_CHARS"
+jwt_access_secret  = "REPLACE_MIN_16_CHARS"
+jwt_refresh_secret = "REPLACE_MIN_16_CHARS"
+
+bootstrap_admin_email    = "admin@example.com"
+bootstrap_admin_password = "REPLACE_6_TO_8_CHARS"
+
+container_image     = "123456789012.dkr.ecr.us-east-1.amazonaws.com/{{PROJECT_SLUG}}-prod-api:v1"
+container_port      = 3000
+health_check_path   = "/health"
+desired_count       = 2
+
+# Rede: tasks em subnet privada (egress via NAT — custo ~fixo de NAT na região)
+nat_gateway_enabled = true
+
+# TLS no ALB (HTTP 80 redireciona para 443)
+acm_certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+# RDS gerenciado (ajuste classe e retention ao RPO/RTO)
+rds_backup_retention_period = 14
+rds_skip_final_snapshot     = false
+rds_deletion_protection     = true
+rds_multi_az                = true
+# rds_final_snapshot_identifier = "{{PROJECT_SLUG}}-prod-mysql-final" # opcional se skip_final_snapshot=false
+
+secret_recovery_window_in_days = 7
+
+ecs_log_retention_in_days = 30
+ecs_container_insights    = "enabled"
+
+enable_ecs_autoscaling         = true
+ecs_autoscaling_min_capacity   = 2
+ecs_autoscaling_max_capacity   = 8
+
+enable_cloudwatch_alarms = true
+# alarm_sns_topic_arn    = "arn:aws:sns:us-east-1:123456789012:ops-alerts"
+
+enable_waf = true

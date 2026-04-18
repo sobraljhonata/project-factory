@@ -1,0 +1,704 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: API de Gerenciamento de Usuários e Pratos
+  description: Esta é uma API para gerenciar usuários e pratos com autenticação JWT.
+servers:
+  - url: http://localhost:3000
+    description: Servidor local
+
+tags:
+  - name: Users
+    description: Operações relacionadas a usuários
+  - name: Pratos
+    description: Operações relacionadas a pratos
+  - name: Auth
+    description: Operações de autenticação
+  - name: Pedidos
+    description: Operações relacionadas a pedidos
+
+paths:
+  /api/users:
+    post:
+      summary: Cria um novo usuário
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUser"
+      responses:
+        201:
+          description: O usuário foi criado com sucesso!
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateUserResponseDTO"
+        500:
+          description: Algum erro aconteceu
+  /api/users/{id}:
+    get:
+      summary: Retorna um usuário pelo ID
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: false
+          description: O ID do usuário
+      responses:
+        200:
+          description: Detalhes do usuário
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        404:
+          description: Usuário não encontrado
+        500:
+          description: Algum erro aconteceu
+    put:
+      summary: Atualiza um usuário pelo ID
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+          description: O ID do usuário
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+      responses:
+        200:
+          description: O usuário foi atualizado com sucesso!
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        404:
+          description: Usuário não encontrado
+        500:
+          description: Algum erro aconteceu
+    delete:
+      summary: Deleta um usuário pelo ID
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+          description: O ID do usuário
+      responses:
+        204:
+          description: O usuário foi deletado com sucesso!
+        404:
+          description: Usuário não encontrado
+        500:
+          description: Algum erro aconteceu
+  /api/pratos:
+    post:
+      summary: Cria um novo prato
+      tags: [Pratos]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Prato"
+      responses:
+        201:
+          description: O prato foi criado com sucesso!
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatePratoResponseDTO"
+        500:
+          description: Algum erro aconteceu
+    get:
+      summary: Retorna todos os pratos
+      tags: [Pratos]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Uma lista de pratos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Prato"
+        500:
+          description: Algum erro aconteceu
+  /api/pratos/{id}:
+    get:
+      summary: Retorna um prato pelo ID
+      tags: [Pratos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+          description: O ID do prato
+      responses:
+        200:
+          description: Detalhes do prato
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Prato"
+        404:
+          description: Prato não encontrado
+        500:
+          description: Algum erro aconteceu
+    put:
+      summary: Atualiza um prato pelo ID
+      tags: [Pratos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+          description: O ID do prato
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Prato"
+      responses:
+        200:
+          description: O prato foi atualizado com sucesso!
+        404:
+          description: Prato não encontrado
+        500:
+          description: Algum erro aconteceu
+    delete:
+      summary: Deleta um prato pelo ID
+      tags: [Pratos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+          description: O ID do prato
+      responses:
+        200:
+          description: O prato foi deletado com sucesso!
+        404:
+          description: Prato não encontrado
+        500:
+          description: Algum erro aconteceu
+  /api/login:
+    post:
+      summary: Autentica um usuário e retorna um token JWT
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Login"
+      responses:
+        200:
+          description: Autenticação bem-sucedida
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        401:
+          description: Credenciais inválidas
+        500:
+          description: Algum erro aconteceu
+  /api/refresh-token:
+    post:
+      summary: Gera um novo token JWT
+      tags: [Auth]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshToken"
+      responses:
+        200:
+          description: Novo token gerado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RefreshToken"
+        401:
+          description: Token inválido ou expirado
+        500:
+          description: Algum erro aconteceu
+  /api/pedidos:
+    get:
+      summary: Lista todos os pedidos
+      security:
+        - bearerAuth: []
+      tags: [Pedidos]
+      responses:
+        200:
+          description: Lista de pedidos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Pedido"
+        401:
+          description: Token inválido ou ausente
+        403:
+          description: Sem permissão
+    post:
+      summary: Cria um pedido
+      security:
+        - bearerAuth: []
+      tags: [Pedidos]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreatePedido" }
+            example:
+              usuarioId: 1
+              itens:
+                - produtoId: 1
+                  quantidade: 2
+                  precoUnitario: 10
+      responses:
+        201:
+          description: Criado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pedido"
+        400:
+          description: Erro de validação
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseUserError"
+        401:
+          description: Token inválido ou ausente
+        403:
+          description: Sem permissão
+  /api/pedidos/{id}:
+    get:
+      summary: Busca pedido por ID
+      security:
+        - bearerAuth: []
+      tags: [Pedidos]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        200:
+          description: Buscar pedido por ID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pedido"
+        401:
+          description: Token inválido ou ausente
+        403:
+          description: Sem permissão
+        404:
+          description: Não encontrado
+    put:
+      summary: Atualiza pedido
+      security:
+        - bearerAuth: []
+      tags: [Pedidos]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePedido"
+            example:
+              status: "PAGO"
+      responses:
+        200:
+          description: Pedido atualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pedido"
+        400:
+          description: Erro de validação
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseUserError"
+              example:
+                message: "Erro de validação"
+                errors:
+                  - path: "nome"
+                    message: "O nome é obrigatório"
+        401:
+          description: Token inválido ou ausente
+        403:
+          description: Sem permissão
+        404:
+          description: Não encontrado
+    delete:
+      summary: Remove pedido
+      security:
+        - bearerAuth: []
+      tags: [Pedidos]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        204:
+          description: Sem conteúdo
+        401:
+          description: Token inválido ou ausente
+        403:
+          description: Sem permissão
+        404:
+          description: Não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseUserError"
+              example:
+                message: "Pedido não encontrado"
+                errors: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    User:
+      type: object
+      required:
+        - nome
+        - senha
+        - email
+        - role
+      properties:
+        nome:
+          type: string
+          description: O nome de usuário
+        senha:
+          type: string
+          description: A senha do usuário
+        email:
+          type: string
+          description: O email do usuário
+        role:
+          type: string
+          description: O papel do usuário no sistema
+      example:
+        id: 1
+        nome: "João da Silva"
+        senha: "123abc"
+        email: "joao.silva@dominio.com"
+        role: "Admin"
+    CreateUser:
+      type: object
+      required:
+        - nome
+        - senha
+        - email
+        - role
+      properties:
+        nome:
+          type: string
+          description: O nome de usuário
+        senha:
+          type: string
+          description: A senha do usuário
+        email:
+          type: string
+          description: O email do usuário
+        role:
+          type: string
+          description: O papel do usuário no sistema
+      example:
+        nome: "João da Silva"
+        senha: "123abc"
+        email: "joao.silva@dominio.com"
+        role: "Admin"
+    CreateUserResponseDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID do usuário criado
+        nome:
+          type: string
+          description: O nome do usuário
+        email:
+          type: string
+          description: O email do usuário
+        role:
+          type: string
+          description: O papel do usuário no sistema
+      example:
+        id: 1
+        nome: "João da Silva"
+        email: "joao.silva@dominio.com"
+        role: "Admin"
+    Prato:
+      type: object
+      required:
+        - nome
+        - descricao_detalhada
+        - descricao_resumida
+        - cozinha
+        - valor
+      properties:
+        nome:
+          type: string
+          description: O nome do prato
+        descricao_detalhada:
+          type: string
+          description: A descrição detalhada do prato
+        descricao_resumida:
+          type: string
+          description: A descrição resumida do prato
+        valor:
+          type: number
+          format: float
+          description: O valor do prato
+      example:
+        nome: "Lasanha"
+        descricao_detalhada: "Lasanha à bolonhesa com queijo gratinado"
+        descricao_resumida: "Lasanha tradicional"
+        cozinha: "Italiana"
+        valor: 29.90
+    CreatePratoResponseDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID do prato criado
+        nome:
+          type: string
+          description: O nome do prato
+        descricao_detalhada:
+          type: string
+          description: A descrição detalhada do prato
+        descricao_resumida:
+          type: string
+          description: A descrição resumida do prato
+        cozinha:
+          type: string
+          description: O tipo de cozinha do prato
+        valor:
+          type: number
+          format: float
+          description: O valor do prato
+      example:
+        id: 1
+        nome: "Lasanha"
+        descricao_detalhada: "Lasanha à bolonhesa com queijo gratinado"
+        descricao_resumida: "Lasanha tradicional"
+        cozinha: "Italiana"
+        valor: 29.90
+    ResponseUserError:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Mensagem de erro
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              path:
+                type: string
+              message:
+                type: string
+      example:
+        message: "Erro de validação"
+        errors:
+          - path: "nome"
+            message: "O nome é obrigatório"
+    Login:
+      type: object
+      required:
+        - email
+        - senha
+      properties:
+        email:
+          type: string
+          description: O email do usuário
+        senha:
+          type: string
+          description: A senha do usuário
+      example:
+        email: "joao.silva@dominio.com"
+        senha: "123abc"
+    AuthResponse:
+      type: object
+      required:
+        - token
+        - userId
+        - role
+      properties:
+        token:
+          type: string
+          description: Token JWT para autenticação
+        userId:
+          type: integer
+          description: ID do usuário autenticado
+        role:
+          type: string
+          description: Papel do usuário autenticado
+    RefreshToken:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+      description: Token JWT para autenticação
+      example:
+        refreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJqb2FvLnNpbHZhQGRvbWluaW8uY29tIiwicm9sZSI6IkdlcmVudGUiLCJpYXQiOjE3NTg2NzUyNTcsImV4cCI6MTc1ODY3NjE1N30.9wHmaympHnxyNtZxfEyEtrxXSRlUWpNlwDSqlDfKoMQ"
+    PedidoItem:
+      type: object
+      properties:
+        produtoId:
+          type: integer
+          example: 1
+        quantidade:
+          type: integer
+          minimum: 1
+          example: 2
+        precoUnitario:
+          type: number
+          minimum: 0
+          example: 10.5
+      required: [produtoId, quantidade, precoUnitario]
+    Pedido:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        usuarioId:
+          type: integer
+          example: 1
+        clienteTelefone:
+          type: string
+          example: "+5511999999999"
+        itens:
+          type: array
+          items:
+            $ref: "#/components/schemas/PedidoItem"
+        total:
+          type: number
+          example: 21.0
+        status:
+          type: string
+          enum: [CRIADO, PAGO, CANCELADO, ENVIADO]
+          example: CRIADO
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-09-15T10:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2025-09-15T10:00:00Z"
+      example:
+        id: 1
+        usuarioId: 1
+        clienteTelefone: "+5511999999999"
+        itens:
+          - produtoId: 1
+            quantidade: 2
+            precoUnitario: 10.5
+        total: 21.0
+        status: CRIADO
+        createdAt: "2025-09-15T10:00:00Z"
+        updatedAt: "2025-09-15T10:00:00Z"
+    CreatePedido:
+      type: object
+      properties:
+        usuarioId:
+          type: integer
+          example: 1
+        clienteTelefone:
+          type: string
+          example: "+5511999999999"
+        itens:
+          type: array
+          items:
+            $ref: "#/components/schemas/PedidoItem"
+      required:
+        - usuarioId
+        - clienteTelefone
+        - itens
+      example:
+        usuarioId: 1
+        clienteTelefone: "+5511999999999"
+        itens:
+          - produtoId: 1
+            quantidade: 2
+            precoUnitario: 10.5
+    UpdatePedido:
+      type: object
+      properties:
+        itens:
+          type: array
+          items:
+            $ref: "#/components/schemas/PedidoItem"
+          status:
+            type: string
+            enum: [CRIADO, PAGO, CANCELADO, ENVIADO]
+            example: PAGO
+      required:
+        - status
+      example:
+        status: "PAGO"
