@@ -1,0 +1,11 @@
+---
+description: Separação entre core do boilerplate e providers de infraestrutura
+alwaysApply: true
+---
+
+Diretrizes:
+- não misturar lógica específica de AWS no núcleo da aplicação
+- provider de infra deve viver em camada/template separado
+- foundation deve ser opcional e plugável
+- V1 foca em AWS, mas estrutura deve permitir novos providers no futuro
+- não criar abstrações vazias para Azure/on-prem antes da hora

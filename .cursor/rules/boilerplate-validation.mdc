@@ -1,0 +1,19 @@
+---
+description: Garantia de integridade após geração de boilerplate
+alwaysApply: true
+---
+
+Após gerar qualquer projeto:
+
+- validar se existem placeholders não substituídos:
+  regex: {{[A-Z0-9_]+}}
+
+- se existir placeholder:
+  → falhar a execução da CLI
+
+- validar:
+  - package.json consistente
+  - README coerente com comandos reais
+  - ausência de valores hardcoded indevidos
+
+- não permitir geração “silenciosamente quebrada”

@@ -7,7 +7,8 @@
   },
   "description": "CLI V1 — Node/Express + AWS Terraform opcional",
   "bin": {
-    "create-api-app": "./dist/cli.js"
+    "create-api-app": "./dist/cli.js",
+    "project-factory": "./dist/cli.js"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",

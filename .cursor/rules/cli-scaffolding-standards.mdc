@@ -1,0 +1,12 @@
+---
+description: Padrões para desenho de CLI geradora de projetos
+alwaysApply: true
+---
+
+Ao desenhar a CLI:
+- começar com uma V1 pequena e funcional
+- usar composição de templates em vez de lógica condicional caótica
+- separar providers de infraestrutura e stack de backend
+- tornar perguntas interativas claras e objetivas
+- evitar suporte completo a múltiplas clouds cedo demais
+- priorizar legibilidade do código da CLI

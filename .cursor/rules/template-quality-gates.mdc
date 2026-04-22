@@ -1,0 +1,12 @@
+---
+description: Gates mínimos de qualidade para boilerplate e templates
+alwaysApply: true
+---
+
+Toda proposta deve considerar:
+- clareza dos placeholders
+- ausência de hardcodes desnecessários
+- legibilidade da estrutura gerada
+- capacidade de documentação
+- risco de template gerar projetos quebrados
+- previsibilidade de uso

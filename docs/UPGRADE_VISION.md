@@ -31,4 +31,4 @@ Este documento **não descreve código em produção**. É um desenho objetivo p
 - Semver estrito nos `template.json` para comparações previsíveis.
 - Documentação de intenção (este arquivo) sem obrigar dependências nem lógica complexa na CLI hoje.
 
-Quando houver demanda real, implementar o mínimo viável (ex.: apenas relatório `upgrade --dry-run` que lista divergências) antes de qualquer aplicação automática.
+Implementado na CLI: `project-factory upgrade --dry-run` (ou `node cli/dist/cli.js upgrade --dry-run`) — apenas relatório de defasagem semver entre o projeto e os manifests em `templates/`, sem aplicar migrações. Próximos passos continuam sendo receitas manuais / aplicação explícita quando houver demanda.

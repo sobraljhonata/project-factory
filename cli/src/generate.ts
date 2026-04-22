@@ -127,7 +127,8 @@ function removeTemplateManifestFromOutput(outputDir: string): void {
   }
 }
 
-function getTemplatesRoot(): string {
+/** Raiz `templates/` do checkout do factory (mesmo critério usado na geração). */
+export function getTemplatesRoot(): string {
   return path.join(__dirname, "..", "..", "templates");
 }
 

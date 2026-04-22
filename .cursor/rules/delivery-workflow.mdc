@@ -1,0 +1,17 @@
+---
+description: Fluxo de trabalho para extração, desenho e implementação incremental
+alwaysApply: true
+---
+
+Fluxo esperado:
+1. auditar o projeto real
+2. mapear extração
+3. propor arquitetura do boilerplate
+4. propor arquitetura da CLI
+5. implementar em fases
+6. revisar prontidão
+
+Para tarefas médias e grandes:
+- não implementar antes de diagnosticar
+- explicar trade-offs
+- preservar simplicidade da V1

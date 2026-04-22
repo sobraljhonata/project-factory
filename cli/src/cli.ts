@@ -16,6 +16,9 @@ import {
   validateProjectDirArg,
   validateTargetDirAvailable,
 } from "./validate";
+import { runDoctorCommand } from "./doctor";
+import { assertPresetRequiresYes, resolveCreateInfra } from "./presets";
+import { runUpgradeDryRunCommand } from "./upgrade-dry-run";
 
 function slugify(name: string): string {
   return (
@@ -28,6 +31,18 @@ function slugify(name: string): string {
 }
 
 async function main(): Promise<void> {
+  const argv = process.argv.slice(2);
+  if (argv[0] === "doctor") {
+    process.exitCode = await runDoctorCommand(argv.slice(1));
+    return;
+  }
+  if (argv[0] === "upgrade") {
+    process.exitCode = await runUpgradeDryRunCommand(argv.slice(1));
+    return;
+  }
+
+  const createArgv = argv[0] === "create" ? argv.slice(1) : argv;
+
   program
     .name("create-api-app")
     .description(
@@ -46,6 +61,10 @@ async function main(): Promise<void> {
       "--infra <lista>",
       "Camadas separadas por vírgula (foundation,aurora,s3,terraformRemoteState)",
     )
+    .option(
+      "--preset <id>",
+      "Infra padrão: minimal | aws-standard | internal-enterprise (exige --yes; --infra explícito vence)",
+    )
     .option("--region <aws>", "Região AWS padrão nos exemplos", "us-east-1")
     .option(
       "--debug",
@@ -54,16 +73,25 @@ async function main(): Promise<void> {
     )
     .addHelpText(
       "after",
-      "\nExemplo:\n  node cli/dist/cli.js minha-api --yes --package-name minha-api\n\n" +
+      "\nExemplos:\n" +
+        "  node cli/dist/cli.js minha-api --yes --package-name minha-api\n" +
+        "  node cli/dist/cli.js create minha-api --yes --package-name minha-api --preset aws-standard\n\n" +
+        "Inspecionar projeto já gerado (contrato mínimo, offline):\n" +
+        "  node cli/dist/cli.js doctor\n" +
+        "  node cli/dist/cli.js doctor ./meu-projeto --debug\n\n" +
+        "Comparar versões do projeto com templates atuais do factory (sem alterar arquivos):\n" +
+        "  node cli/dist/cli.js upgrade --dry-run\n" +
+        "  node cli/dist/cli.js upgrade --dry-run ./meu-projeto --factory-root /caminho/do/project-factory\n\n" +
         "Documentação completa: README.md na raiz do repositório project-factory.\n",
     )
-    .parse();
+    .parse(createArgv, { from: "user" });
 
   const opts = program.opts<{
     yes?: boolean;
     packageName?: string;
     title?: string;
     infra?: string;
+    preset?: string;
     region?: string;
     debug?: boolean;
   }>();
@@ -74,9 +102,23 @@ async function main(): Promise<void> {
   const targetDir = resolveTargetDir(cwd, projectDirArg);
   validateTargetDirAvailable(targetDir);
 
+  assertPresetRequiresYes(opts.preset, Boolean(opts.yes));
+
   let packageName = opts.packageName?.trim();
   let title = opts.title?.trim();
-  let infraIds: InfraLayerId[] = parseInfraArg(opts.infra);
+  const infraFromCli = program.getOptionValueSource("infra") === "cli";
+
+  let infraIds: InfraLayerId[];
+  if (opts.yes) {
+    infraIds = resolveCreateInfra({
+      presetRaw: opts.preset,
+      yes: true,
+      infraRaw: opts.infra,
+      infraFromCli,
+    });
+  } else {
+    infraIds = parseInfraArg(opts.infra);
+  }
 
   if (!opts.yes) {
     const nameAns = await input({
@@ -129,6 +171,8 @@ async function main(): Promise<void> {
     console.error("[project-factory:debug] resolved", {
       packageName,
       title,
+      preset: opts.preset,
+      infraFromCli,
       infraIds,
       region: vars.AWS_REGION,
     });

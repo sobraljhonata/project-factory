@@ -7,6 +7,10 @@ Atualize:
 
 ## Added
 
+- Presets estáticos (`minimal`, `aws-standard`, `internal-enterprise`) com `--preset` (exige `--yes`); `--infra` explícito vence o preset. Atalho `create` na CLI.
+- Template `templates/infra/aws/terraform-remote-state` (manifest + README) para corresponder a `INFRA_LAYERS` e ao preset `aws-standard`.
+- Comando `upgrade --dry-run`: compara `.project-factory.json` com `template.json` atuais do factory (stack e infra), sem aplicar mudanças.
+- Comando `doctor` (offline) para validar projeto gerado contra o contrato mínimo; bin `project-factory` apontando para a mesma CLI.
 - CLI funcional para geração de projetos
 - Template `api-node-express`
 - Metadata `.project-factory.json`

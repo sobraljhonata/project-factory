@@ -13,17 +13,70 @@ Gerador de projetos **Node.js + Express + TypeScript** com pacotes Terraform **A
 
 1. **O que é:** gera um novo repositório/pasta de app Express + TS a partir de templates; não faz deploy nem `terraform apply`.
 2. **Comando oficial (não interativo):** na raiz do factory, após dependências e build:
+   
    ```bash
    npm install
    npm run build:cli
    node cli/dist/cli.js nome-da-sua-api --yes --package-name nome-da-sua-api
    ```
+
    Atalho (recompila a CLI antes de gerar): `npm run create-app -- nome-da-sua-api --yes --package-name nome-da-sua-api` — o `--` antes dos argumentos é **obrigatório** para o npm repassá-los à CLI.
 3. **Entrar no projeto gerado:** `cd nome-da-sua-api`
 4. **Subir localmente:** `cp .env.example .env`, `npm install`, `npm run dev` — ver README gerado e [templates/api-node-express/README.md](templates/api-node-express/README.md).
 5. **Limitações da beta:** sem comando `upgrade` automático; infra é só cópia de arquivos; detalhes em [docs/BETA_SCOPE.md](docs/BETA_SCOPE.md).
 
 Ajuda da CLI: `node cli/dist/cli.js --help`.
+
+### Presets de infra (`--preset`, V2.2)
+
+Com **`--yes`**, você pode fixar listas Terraform comuns sem repetir `--infra`:
+
+| Preset | Camadas (`--infra` equivalente) |
+|--------|----------------------------------|
+| `minimal` | *(nenhuma)* |
+| `aws-standard` | `foundation`, `terraformRemoteState` |
+| `internal-enterprise` | `foundation`, `aurora`, `s3`, `terraformRemoteState` |
+
+- **`--preset` exige `--yes`** nesta versão (presets não aplicam ao modo interativo).
+- Se **`--infra`** for passado na linha de comando, ele **vence** o preset (lista explícita).
+- Atalho opcional: primeiro argumento pode ser `create` — mesmo comportamento que o legado sem `create`.
+
+```bash
+node cli/dist/cli.js create minha-api --yes --package-name minha-api --preset aws-standard
+project-factory create minha-api --yes --package-name minha-api --preset minimal
+```
+
+### Inspecionar um projeto já gerado (`doctor`)
+
+Na raiz do **repositório gerado** (ou passando o caminho), após `npm run build:cli` no factory:
+
+```bash
+node cli/dist/cli.js doctor
+node cli/dist/cli.js doctor /caminho/do/meu-projeto --debug
+```
+
+Com o pacote `cli` linkado ou via `npx --prefix cli`: `project-factory doctor`. Saída **0** se não houver erros (avisos são permitidos); **1** se o contrato mínimo for violado. Apenas leitura de disco — não roda `npm install`, Terraform nem smoke HTTP.
+
+### Defasagem de templates (`upgrade --dry-run`)
+
+Compara `.project-factory.json` do **projeto gerado** com os `template.json` atuais sob `templates/` do factory (stack + camadas `infraTemplates`). Não altera arquivos.
+
+Na raiz do projeto gerado (ou com caminho explícito), após `npm run build:cli` no factory:
+
+```bash
+node cli/dist/cli.js upgrade --dry-run
+node cli/dist/cli.js upgrade --dry-run ./meu-projeto --debug
+```
+
+Se a CLI não estiver ao lado de `templates/` (ex.: pacote isolado), passe a raiz do repositório do factory:
+
+```bash
+node cli/dist/cli.js upgrade --dry-run --factory-root /caminho/do/project-factory
+```
+
+**Códigos de saída:** `0` = comparação ok e nenhuma versão de template **atrás** do factory; `1` = erro de leitura/metadata ou **há** defasagem semver (versão no projeto menor que a do `template.json` do factory) em stack ou infra. `project-factory upgrade --dry-run` também funciona via bin.
+
+O relatório inclui linha **`Upgrade status:`** (`UP TO DATE`, `BEHIND` ou `FAILED`), risco por componente atrasado (MAJOR → **HIGH**; MINOR/PATCH → **LOW**) e **`Summary risk (worst case):`** quando há defasagem.
 
 ## Variáveis mínimas (`.env`) para subir a API
 
@@ -92,6 +145,7 @@ Gera um app em diretório temporário, roda `npm install`, `npm run check` e `np
 
 | Pasta | Conteúdo |
 |-------|----------|
+|       |          |
 | `templates/api-node-express/` | App HTTP mínima (core Express, health, ping, Sequelize, Jest) + `template.json`. |
 | `templates/infra/aws/*` | Terraform por stack; copiado só se selecionado; cada stack tem `template.json`. |
 | `cli/` | Motor: cópia + substituição `{{PLACEHOLDER}}`. |
@@ -104,5 +158,3 @@ Validações na CLI (fail fast): destino inexistente ou pasta vazia; caminho rel
 
 - Novas stacks (Java/Spring): novo template em `templates/stacks/...` + entrada em `cli/src/registry.ts`.
 - Novos providers: novas pastas sob `templates/infra/<provider>/` sem alterar o contrato do motor (`generate.ts`).
-# project-factory
-# project-factory

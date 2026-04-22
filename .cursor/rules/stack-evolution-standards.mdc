@@ -1,0 +1,11 @@
+---
+description: Padrões para evolução futura de stack (Node hoje, Java amanhã)
+alwaysApply: true
+---
+
+Diretrizes:
+- V1 usa Node.js + Express + TypeScript
+- não acoplar o conceito de boilerplate ao Express de forma irreversível
+- separar convenções de linguagem/framework do núcleo do gerador
+- preparar espaço arquitetural para futuro provider de stack Java/Spring
+- não tentar implementar Java/Spring na V1

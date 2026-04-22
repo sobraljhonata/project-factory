@@ -1,0 +1,13 @@
+---
+description: Regras para extração de boilerplate a partir de projeto real
+alwaysApply: true
+---
+
+Ao extrair um boilerplate:
+- diferenciar claramente o que é reutilizável do que é específico do projeto
+- não copiar tudo cegamente
+- remover nomes, ARNs, IDs, URLs e configurações acopladas ao projeto atual
+- transformar detalhes específicos em placeholders ou configurações
+- separar core, template, optional module e remove
+- preservar a arquitetura evolutiva
+- evitar superengenharia na V1
