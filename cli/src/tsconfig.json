@@ -11,6 +11,6 @@
     "resolveJsonModule": true,
     "declaration": false
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "cli.ts", "generate.test.ts", "generate.ts", "parse-infra.test.ts", "parse-infra.ts", "registry.ts", "resolve-title.test.ts", "resolve-title.ts", "validate.test.ts", "validate.ts"],
   "exclude": ["src/**/*.test.ts"]
 }
