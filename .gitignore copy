@@ -1,0 +1,4 @@
+node_modules/
+cli/dist/
+_gen-smoke/
+_gen-test/

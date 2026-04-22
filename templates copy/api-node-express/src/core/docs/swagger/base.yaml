@@ -1,0 +1,306 @@
+openapi: 3.0.3
+info:
+  version: 1.0.0
+  title: "{{API_TITLE}}"
+  description: |
+    {{API_DESCRIPTION}}
+    Recursos sob `/api` podem seguir envelope HATEOAS: `data`, `links`, `meta`.
+    `meta.correlationId` está presente em respostas JSON com corpo; o header `x-correlation-id`
+    repete o mesmo valor. Em `204 No Content`, use apenas o header.
+
+servers:
+  - url: http://localhost:{{APP_PORT}}
+    description: Raiz (health, readiness)
+  - url: http://localhost:{{APP_PORT}}/api
+    description: Recursos versionados da API
+
+tags:
+  - name: Operations
+    description: Saúde e disponibilidade da aplicação
+
+paths:
+  /v1/ping:
+    get:
+      summary: Ping JSON (exemplo de rota sob /api)
+      tags: [Operations]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                  meta:
+                    type: object
+  /health:
+    get:
+      summary: Liveness (ALB / ECS)
+      tags: [Operations]
+      responses:
+        "200":
+          description: Aplicação viva
+          headers:
+            x-correlation-id:
+              description: Mesmo valor de meta.correlationId
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+  /ready:
+    get:
+      summary: Readiness (checagem opcional de banco)
+      tags: [Operations]
+      responses:
+        "200":
+          description: Pronto para tráfego
+          headers:
+            x-correlation-id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadinessOkResponse"
+        "503":
+          description: Dependência indisponível (ex. banco)
+          headers:
+            x-correlation-id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadinessErrorResponse"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Link:
+      type: object
+      properties:
+        href:
+          type: string
+        method:
+          type: string
+      required: [href, method]
+
+    Links:
+      type: object
+      additionalProperties:
+        $ref: "#/components/schemas/Link"
+
+    Meta:
+      type: object
+      properties:
+        correlationId:
+          type: string
+          format: uuid
+        version:
+          type: string
+          example: "1.0.0"
+      required: [correlationId]
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+        uptimeSeconds:
+          type: integer
+        meta:
+          $ref: "#/components/schemas/Meta"
+      required: [status, uptimeSeconds, meta]
+
+    ReadinessOkResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ready
+        dbChecked:
+          type: boolean
+        meta:
+          $ref: "#/components/schemas/Meta"
+      required: [status, meta]
+
+    ReadinessErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: not_ready
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: NOT_READY
+            message:
+              type: string
+          required: [code, message]
+        meta:
+          $ref: "#/components/schemas/Meta"
+      required: [status, error, meta]
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details: {}
+          required: [code, message]
+        meta:
+          $ref: "#/components/schemas/Meta"
+      required: [error, meta]
+
+    ValidationErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              enum: [INVALID_QUERY, VALIDATION_ERROR]
+            message:
+              type: string
+            details:
+              type: object
+              properties:
+                errors:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      path:
+                        type: string
+                      message:
+                        type: string
+          required: [code, message]
+        meta:
+          $ref: "#/components/schemas/Meta"
+      required: [error, meta]
+
+    UnauthorizedResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: UNAUTHORIZED
+            message:
+              type: string
+          required: [code, message]
+        links:
+          type: array
+          items:
+            type: object
+            properties:
+              rel:
+                type: string
+              href:
+                type: string
+              method:
+                type: string
+        meta:
+          $ref: "#/components/schemas/Meta"
+      required: [error, meta]
+
+    ForbiddenResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: FORBIDDEN
+            message:
+              type: string
+          required: [code, message]
+        links:
+          type: array
+          items:
+            type: object
+            properties:
+              rel:
+                type: string
+              href:
+                type: string
+              method:
+                type: string
+        meta:
+          $ref: "#/components/schemas/Meta"
+      required: [error, meta]
+
+    SingleResourceEnvelope:
+      type: object
+      description: Um recurso com HATEOAS
+      properties:
+        data: {}
+        links:
+          $ref: "#/components/schemas/Links"
+        meta:
+          $ref: "#/components/schemas/Meta"
+      required: [data, links, meta]
+
+    CollectionEnvelope:
+      type: object
+      description: Coleção com HATEOAS (data é array)
+      properties:
+        data:
+          type: array
+          items: {}
+        links:
+          $ref: "#/components/schemas/Links"
+        meta:
+          $ref: "#/components/schemas/Meta"
+      required: [data, links, meta]
+
+    DeletedFlagResponse:
+      type: object
+      description: Confirmação de exclusão com envelope HATEOAS
+      required: [data, links, meta]
+      properties:
+        data:
+          type: object
+          required: [deleted]
+          properties:
+            deleted:
+              type: boolean
+              example: true
+        links:
+          $ref: "#/components/schemas/Links"
+        meta:
+          allOf:
+            - $ref: "#/components/schemas/Meta"
+          properties:
+            version:
+              type: string
+              example: "1.0.0"
+
+    SimpleListMeta:
+      allOf:
+        - $ref: "#/components/schemas/Meta"
+      properties:
+        version:
+          type: string
+          example: "1.0.0"

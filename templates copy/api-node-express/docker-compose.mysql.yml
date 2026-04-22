@@ -1,0 +1,16 @@
+# MySQL local alinhado ao .env-exemplo (DB_DATABASE / DB_USERNAME / DB_PASSWORD).
+# No .env use DB_HOST=127.0.0.1 (não 0.0.0.0 — o cliente não conecta em 0.0.0.0).
+# Uso: docker compose -f docker-compose.mysql.yml up -d
+# Depois: npm run db:bootstrap (ADMIN_EMAIL e ADMIN_PASSWORD no .env)
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: db_app
+      MYSQL_USER: user_app
+      MYSQL_PASSWORD: Senha@123
+      MYSQL_ROOT_PASSWORD: rootlocal
+    ports:
+      - "3306:3306"

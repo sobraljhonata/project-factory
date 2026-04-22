@@ -1,0 +1,42 @@
+# Copie para terraform.tfvars (não commitar segredos reais).
+# JWT: cada um com pelo menos 16 caracteres (regra do env.ts).
+
+aws_region   = "{{AWS_REGION}}"
+project_name = "{{PROJECT_SLUG}}"
+environment  = "dev"
+
+# Saídas do módulo infra/aws/s3-phase1 (use os valores reais do terraform output)
+media_bucket_name    = "{{PROJECT_SLUG}}-media-a1b2c3d4"
+s3_public_base_url   = "https://{{PROJECT_SLUG}}-media-a1b2c3d4.s3.us-east-1.amazonaws.com"
+
+jwt_secret          = "troque-por-32-chars-minimo-segredo-jwt"
+jwt_access_secret   = "troque-por-32-chars-minimo-access-xx"
+jwt_refresh_secret  = "troque-por-32-chars-minimo-refresh-x"
+
+# Admin inicial (seed em ECS: ./scripts/ecs-run-db-seed.sh). Login atual valida senha 6–8 caracteres.
+# bootstrap_admin_email    = "admin@example.com"
+# bootstrap_admin_password = "admin123"
+
+# Imagem inicial (valida ALB/ECS). Depois do push para o ECR (Fase 3):
+# container_image     = "123456789012.dkr.ecr.us-east-1.amazonaws.com/{{PROJECT_SLUG}}-dev-api:v1"
+# container_port      = 3000
+# health_check_path   = "/health"
+
+# HTTPS no ALB (front em https://): certificado ACM na MESMA região (ex.: us-east-1).
+# O nome do certificado deve bater com o host que o browser usa (ex.: api.seudominio.com).
+# Crie um CNAME no DNS apontando esse nome para o DNS do ALB (output alb_dns_name).
+# Sem este ARN, o ALB só escuta na 80 — https://<dns-do-alb> na 443 dá timeout.
+# acm_certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+# HTTPS sem domínio próprio: API Gateway HTTP API (execute-api) na frente do ALB (terraform output api_gateway_https_base_url).
+# enable_apigatewayv2_alb_proxy = true
+# api_gateway_cors_allow_origins = ["*"]
+
+# Banco: RDS criado por este stack (padrão) OU Aurora (Fase 2):
+# use_managed_rds        = true   # default
+# use_managed_rds        = false
+# external_db_host       = "meu-cluster.cluster-xxxxx.us-east-1.rds.amazonaws.com"
+# external_db_password   = "mesma-senha-do-master-aurora"
+# No aurora-phase2: allowed_security_group_ids = [ "<output ecs_tasks_security_group_id>" ]
+
+# --- Produção (NAT, HTTPS, RDS endurecido, WAF, alarmes): veja terraform.tfvars.production.example ---

@@ -1,35 +1,4 @@
-
 # Changelog
-
-Atualize:
-
-## [0.1.0-beta.1]
-
-## Added
-
-- CLI funcional para geração de projetos
-- Template `api-node-express`
-- Metadata `.project-factory.json`
-- Versionamento separado de CLI e template
-- Smoke test com contrato de geração
-- Testes automatizados da CLI
-
-### Changed
-
-- Refatoração do `core` para infra mínima
-- Introdução de `lib/` como camada opcional
-- Documentação de arquitetura (`CORE.md`)
-
-### Fixed
-
-- Remoção de placeholders não resolvidos
-- Correções de inconsistência entre README e comportamento real
-
-### Known limitations
-
-- Sem suporte a upgrade automático
-- Terraform não validado em cloud
-- Modo interativo com menor cobertura
 
 Todas as mudanças notáveis do **project-factory** (gerador + templates) serão descritas aqui. O formato é mantido simples para a beta interna.
 
