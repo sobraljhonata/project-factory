@@ -27,6 +27,8 @@ Gerador de projetos **Node.js + Express + TypeScript** com pacotes Terraform **A
 
 Ajuda da CLI: `node cli/dist/cli.js --help`.
 
+**Automação (`create --json`, V2.6):** `project-factory create minha-api --yes --package-name minha-api --json` (o **`--json` exige `--yes`**) imprime um único objeto JSON em stdout com `ok`, caminhos resolvidos, `infra`, `template` / `templateVersion` / `generatorVersion` (lidos de `.project-factory.json` após a geração) e `nextSteps`. Erros de parse/CLI ou de validação com `--json` seguem o mesmo contrato que `doctor`/`upgrade` (`ok: false`, `command: "create"`, `error`, `exitCode`). Sem `--json`, a saída humana permanece igual.
+
 ### Presets de infra (`--preset`, V2.2)
 
 Com **`--yes`**, você pode fixar listas Terraform comuns sem repetir `--infra`:

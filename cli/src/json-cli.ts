@@ -1,8 +1,8 @@
 /**
- * Erros de parse/CLI com `--json`: um objeto em stdout (opção B), exit ≠ 0.
+ * Erros de parse/CLI (e falhas em modo `--json`) em stdout (opção B), exit ≠ 0.
  */
 export function writeCliParseErrorJson(
-  command: "doctor" | "upgrade-dry-run",
+  command: "doctor" | "upgrade-dry-run" | "create",
   error: string,
   exitCode: number,
 ): void {

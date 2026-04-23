@@ -7,6 +7,7 @@ Atualize:
 
 ## Added
 
+- **V2.6:** `create --json` (obrigatório com `--yes`) — JSON único em stdout após geração, enriquecido com metadata de `.project-factory.json` e `nextSteps`; erros com `--json` no mesmo contrato `{ ok, command, error, exitCode }`. Fluxo extraído para `runCreateCommand` com `exitOverride` no parse. Saída humana sem `--json` inalterada.
 - **V2.5:** `doctor --json` e `upgrade --dry-run --json` — saída JSON única em stdout para CI/scripts, campo `ok` e `exitCode` coerentes; em erro de parse/CLI com `--json`, objeto de erro JSON em stdout e exit ≠ 0. Lógica de `diagnoseProject` / `analyzeUpgradeDryRun` inalterada.
 - Presets estáticos (`minimal`, `aws-standard`, `internal-enterprise`) com `--preset` (exige `--yes`); `--infra` explícito vence o preset. Atalho `create` na CLI.
 - Template `templates/infra/aws/terraform-remote-state` (manifest + README) para corresponder a `INFRA_LAYERS` e ao preset `aws-standard`.

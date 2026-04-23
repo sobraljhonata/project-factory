@@ -14,4 +14,12 @@ describe("writeCliParseErrorJson", () => {
     });
     spy.mockRestore();
   });
+
+  it("aceita command create", () => {
+    const spy = jest.spyOn(console, "log").mockImplementation(() => {});
+    writeCliParseErrorJson("create", "x", 1);
+    const payload = JSON.parse(String(spy.mock.calls[0][0])) as Record<string, unknown>;
+    expect(payload.command).toBe("create");
+    spy.mockRestore();
+  });
 });
