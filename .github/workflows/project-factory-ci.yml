@@ -3,16 +3,24 @@ name: project-factory CI
 on:
   push:
     paths:
-      - "project-factory/**"
+      - "templates/**"
+      - "cli/**"
+      - "scripts/**"
+      - "package.json"
+      - "package-lock.json"
       - ".github/workflows/project-factory-ci.yml"
   pull_request:
     paths:
-      - "project-factory/**"
+      - "templates/**"
+      - "cli/**"
+      - "scripts/**"
+      - "package.json"
+      - "package-lock.json"
       - ".github/workflows/project-factory-ci.yml"
 
 defaults:
   run:
-    working-directory: project-factory
+    working-directory: .
 
 jobs:
   smoke:
@@ -28,7 +36,7 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: project-factory/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -38,3 +46,29 @@ jobs:
 
       - name: Smoke test (generate + check + HTTP)
         run: npm run smoke
+
+  terraform-templates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Terraform fmt + validate (templates via projeto gerado)
+        run: npm run check:terraform

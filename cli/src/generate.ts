@@ -25,7 +25,7 @@ export const INFRA_LAYERS: Record<
   },
   terraformRemoteState: {
     dir: "infra/aws/terraform-remote-state",
-    label: "Terraform remote state (S3 + DynamoDB lock)",
+    label: "Remote state — bucket S3 (state) + DynamoDB (lock), template mínimo",
   },
 };
 

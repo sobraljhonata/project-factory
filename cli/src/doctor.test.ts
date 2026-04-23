@@ -6,6 +6,7 @@ import {
   diagnoseProject,
   doctorExitCode,
   runDoctorCommand,
+  serializeDoctorReport,
 } from "./doctor";
 import { PROJECT_FACTORY_PRODUCT_NAME } from "./generate";
 
@@ -150,10 +151,64 @@ describe("diagnoseProject", () => {
   });
 });
 
+describe("serializeDoctorReport", () => {
+  it("ok true e tip quando não há erros", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "pf-doc-ser-"));
+    writeFixture(dir);
+    const r = diagnoseProject(dir);
+    const payload = serializeDoctorReport(r) as Record<string, unknown>;
+    expect(payload.ok).toBe(true);
+    expect(payload.exitCode).toBe(0);
+    expect(payload.command).toBe("doctor");
+    expect(payload.status).toBe("ok");
+    expect(typeof payload.tip).toBe("string");
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("ok false sem tip quando há erro", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "pf-doc-ser-err-"));
+    const r = diagnoseProject(dir);
+    const payload = serializeDoctorReport(r) as Record<string, unknown>;
+    expect(payload.ok).toBe(false);
+    expect(payload.exitCode).toBe(1);
+    expect(payload.tip).toBeUndefined();
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+});
+
 describe("runDoctorCommand", () => {
   it("retorna 1 para flag desconhecida", async () => {
     const code = await runDoctorCommand(["--nope"]);
     expect(code).toBe(1);
+  });
+
+  it("com --json e flag inválida emite um objeto JSON de erro em stdout", async () => {
+    const spy = jest.spyOn(console, "log").mockImplementation(() => {});
+    const code = await runDoctorCommand(["--json", "--nope"]);
+    expect(code).not.toBe(0);
+    expect(spy).toHaveBeenCalled();
+    const payload = JSON.parse(String(spy.mock.calls[0][0])) as Record<string, unknown>;
+    expect(payload).toMatchObject({
+      ok: false,
+      command: "doctor",
+      exitCode: expect.any(Number),
+      error: expect.any(String),
+    });
+    spy.mockRestore();
+  });
+
+  it("com --json em projeto válido emite relatório com ok true", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "pf-doc-cli-json-"));
+    writeFixture(dir);
+    const spy = jest.spyOn(console, "log").mockImplementation(() => {});
+    const code = await runDoctorCommand(["--json"], { cwd: dir });
+    expect(code).toBe(0);
+    const payload = JSON.parse(String(spy.mock.calls[0][0])) as Record<string, unknown>;
+    expect(payload.ok).toBe(true);
+    expect(payload.command).toBe("doctor");
+    expect(payload.status).toBe("ok");
+    spy.mockRestore();
+    fs.rmSync(dir, { recursive: true, force: true });
   });
 
   it("inspeciona diretório via cwd", async () => {

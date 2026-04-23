@@ -8,6 +8,7 @@ import {
   computeBehindBump,
   findStackTemplateDir,
   riskForBehindBump,
+  serializeUpgradeDryRunReport,
   upgradeDryRunExitCode,
   runUpgradeDryRunCommand,
 } from "./upgrade-dry-run";
@@ -167,10 +168,65 @@ describe("analyzeUpgradeDryRun", () => {
   });
 });
 
+describe("serializeUpgradeDryRunReport", () => {
+  it("espelha exitCode e upgradeStatus para relatório alinhado", () => {
+    const base = fs.mkdtempSync(path.join(os.tmpdir(), "pf-up-ser-"));
+    const templatesRoot = path.join(base, "templates");
+    writeTemplateJson(
+      path.join(templatesRoot, "api-node-express"),
+      "api-node-express",
+      "1.0.0",
+    );
+    const proj = path.join(base, "app");
+    writeProjectMeta(proj, { templateVersion: "1.0.0" });
+    const r = analyzeUpgradeDryRun(proj, templatesRoot);
+    const payload = serializeUpgradeDryRunReport(r) as Record<string, unknown>;
+    expect(payload.ok).toBe(true);
+    expect(payload.exitCode).toBe(0);
+    expect(payload.upgradeStatus).toBe("UP_TO_DATE");
+    expect(payload.command).toBe("upgrade-dry-run");
+    fs.rmSync(base, { recursive: true, force: true });
+  });
+
+  it("ok false e BEHIND quando factory está à frente", () => {
+    const base = fs.mkdtempSync(path.join(os.tmpdir(), "pf-up-ser-beh-"));
+    const templatesRoot = path.join(base, "templates");
+    writeTemplateJson(
+      path.join(templatesRoot, "api-node-express"),
+      "api-node-express",
+      "2.0.0",
+    );
+    const proj = path.join(base, "app");
+    writeProjectMeta(proj, { templateVersion: "1.0.0" });
+    const r = analyzeUpgradeDryRun(proj, templatesRoot);
+    const payload = serializeUpgradeDryRunReport(r) as Record<string, unknown>;
+    expect(payload.ok).toBe(false);
+    expect(payload.exitCode).toBe(1);
+    expect(payload.upgradeStatus).toBe("BEHIND");
+    expect(payload.worstRisk).toBe("HIGH");
+    fs.rmSync(base, { recursive: true, force: true });
+  });
+});
+
 describe("runUpgradeDryRunCommand", () => {
   it("exige --dry-run", async () => {
     const code = await runUpgradeDryRunCommand([]);
     expect(code).not.toBe(0);
+  });
+
+  it("com --json sem --dry-run emite JSON de erro em stdout", async () => {
+    const spy = jest.spyOn(console, "log").mockImplementation(() => {});
+    const code = await runUpgradeDryRunCommand(["--json"]);
+    expect(code).not.toBe(0);
+    expect(spy).toHaveBeenCalled();
+    const payload = JSON.parse(String(spy.mock.calls[0][0])) as Record<string, unknown>;
+    expect(payload).toMatchObject({
+      ok: false,
+      command: "upgrade-dry-run",
+      exitCode: expect.any(Number),
+      error: expect.any(String),
+    });
+    spy.mockRestore();
   });
 
   it("aceita --help", async () => {
@@ -194,6 +250,54 @@ describe("runUpgradeDryRunCommand", () => {
       { cwd: proj },
     );
     expect(code).toBe(0);
+    fs.rmSync(base, { recursive: true, force: true });
+  });
+
+  it("'--dry-run' + '--json' alinhado emite ok true em stdout", async () => {
+    const base = fs.mkdtempSync(path.join(os.tmpdir(), "pf-up-cli-json-"));
+    const templatesRoot = path.join(base, "templates");
+    writeTemplateJson(
+      path.join(templatesRoot, "api-node-express"),
+      "api-node-express",
+      "1.0.0",
+    );
+    const proj = path.join(base, "app");
+    writeProjectMeta(proj, { templateVersion: "1.0.0" });
+
+    const spy = jest.spyOn(console, "log").mockImplementation(() => {});
+    const code = await runUpgradeDryRunCommand(
+      ["--dry-run", "--json", "--factory-root", base, "."],
+      { cwd: proj },
+    );
+    expect(code).toBe(0);
+    const payload = JSON.parse(String(spy.mock.calls[0][0])) as Record<string, unknown>;
+    expect(payload.ok).toBe(true);
+    expect(payload.upgradeStatus).toBe("UP_TO_DATE");
+    spy.mockRestore();
+    fs.rmSync(base, { recursive: true, force: true });
+  });
+
+  it("'--dry-run' + '--json' com defasagem emite ok false e BEHIND", async () => {
+    const base = fs.mkdtempSync(path.join(os.tmpdir(), "pf-up-cli-json-beh-"));
+    const templatesRoot = path.join(base, "templates");
+    writeTemplateJson(
+      path.join(templatesRoot, "api-node-express"),
+      "api-node-express",
+      "2.0.0",
+    );
+    const proj = path.join(base, "app");
+    writeProjectMeta(proj, { templateVersion: "1.0.0" });
+
+    const spy = jest.spyOn(console, "log").mockImplementation(() => {});
+    const code = await runUpgradeDryRunCommand(
+      ["--dry-run", "--json", "--factory-root", base, "."],
+      { cwd: proj },
+    );
+    expect(code).toBe(1);
+    const payload = JSON.parse(String(spy.mock.calls[0][0])) as Record<string, unknown>;
+    expect(payload.ok).toBe(false);
+    expect(payload.upgradeStatus).toBe("BEHIND");
+    spy.mockRestore();
     fs.rmSync(base, { recursive: true, force: true });
   });
 });

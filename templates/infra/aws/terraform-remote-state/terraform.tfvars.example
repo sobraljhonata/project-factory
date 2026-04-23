@@ -1,0 +1,5 @@
+# Copie para terraform.tfvars e ajuste se necessário.
+# Valores padrão vêm dos tokens da geração ({{PROJECT_SLUG}}, {{AWS_REGION}}).
+
+aws_region  = "{{AWS_REGION}}"
+name_prefix = "{{PROJECT_SLUG}}"

@@ -11,6 +11,7 @@
     "build:cli": "npm run build -w @project-factory/cli",
     "create-app": "npm run build:cli && node cli/dist/cli.js",
     "test:cli": "npm run test -w @project-factory/cli",
-    "smoke": "node scripts/smoke.cjs"
+    "smoke": "node scripts/smoke.cjs",
+    "check:terraform": "node scripts/terraform-templates-check.cjs"
   }
 }

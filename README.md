@@ -46,6 +46,8 @@ node cli/dist/cli.js create minha-api --yes --package-name minha-api --preset aw
 project-factory create minha-api --yes --package-name minha-api --preset minimal
 ```
 
+**Maturidade das camadas Terraform** (catálogo sob `templates/infra/aws/`): todas trazem `template.json`, README e módulos `.tf` mínimos — **não** há `terraform plan/apply` no CI do factory; valide na sua conta. **`terraform-remote-state`** é propositalmente **pequeno** (S3 state + DynamoDB lock apenas; ver README da camada); `foundation` / `aurora` / `s3` cobrem mais superfície operacional.
+
 ### Inspecionar um projeto já gerado (`doctor`)
 
 Na raiz do **repositório gerado** (ou passando o caminho), após `npm run build:cli` no factory:
@@ -56,6 +58,8 @@ node cli/dist/cli.js doctor /caminho/do/meu-projeto --debug
 ```
 
 Com o pacote `cli` linkado ou via `npx --prefix cli`: `project-factory doctor`. Saída **0** se não houver erros (avisos são permitidos); **1** se o contrato mínimo for violado. Apenas leitura de disco — não roda `npm install`, Terraform nem smoke HTTP.
+
+**Automação (`--json`, V2.5):** `project-factory doctor --json` imprime um único objeto JSON em stdout (`ok`, `exitCode`, `findings`, `summary`, etc.). Se a linha de comando for inválida (ex.: flag desconhecida), com `--json` a CLI ainda imprime um objeto JSON de erro em stdout e retorna código ≠ 0 — o mesmo contrato vale para `upgrade --dry-run --json` abaixo. Sem `--json`, o comportamento e a saída humana permanecem como antes.
 
 ### Defasagem de templates (`upgrade --dry-run`)
 
@@ -75,6 +79,8 @@ node cli/dist/cli.js upgrade --dry-run --factory-root /caminho/do/project-factor
 ```
 
 **Códigos de saída:** `0` = comparação ok e nenhuma versão de template **atrás** do factory; `1` = erro de leitura/metadata ou **há** defasagem semver (versão no projeto menor que a do `template.json` do factory) em stack ou infra. `project-factory upgrade --dry-run` também funciona via bin.
+
+**Automação:** `project-factory upgrade --dry-run --json` emite um único JSON em stdout (`ok`, `upgradeStatus`, `components`, `summary`, etc.), alinhado aos mesmos códigos de saída do modo texto.
 
 O relatório inclui linha **`Upgrade status:`** (`UP TO DATE`, `BEHIND` ou `FAILED`), risco por componente atrasado (MAJOR → **HIGH**; MINOR/PATCH → **LOW**) e **`Summary risk (worst case):`** quando há defasagem.
 
@@ -113,6 +119,16 @@ Na V1, `PACKAGE_NAME` e `PROJECT_SLUG` recebem o **mesmo** valor (nome kebab-cas
 Ver [docs/GENERATION_CONTRACT.md](docs/GENERATION_CONTRACT.md): arquivos esperados, metadados `.project-factory.json`, regra de placeholders e o que o smoke valida. Para expectativas da beta: [docs/BETA_SCOPE.md](docs/BETA_SCOPE.md).
 
 Antes de uma release interna: [docs/BETA_RELEASE_CHECKLIST.md](docs/BETA_RELEASE_CHECKLIST.md).
+
+## Terraform — quality gate (V2.4)
+
+Validação **leve** dos módulos AWS copiados pelo factory (sem `apply`, sem credenciais AWS para o `validate`):
+
+- Script `scripts/terraform-templates-check.cjs` gera um app temporário com preset **`internal-enterprise`** (tokens já substituídos), lista pastas `infra/aws/*` que contêm `.tf` e, em cada uma, roda `terraform fmt -check`, `terraform init -backend=false` e `terraform validate`.
+- **Local:** `npm run check:terraform` — se o executável `terraform` não estiver no PATH, o script imprime `SKIP` e sai **0** (não quebra o fluxo sem Terraform).
+- **CI:** o workflow em `.github/workflows/project-factory-ci.yml` inclui o job `terraform-templates` (Terraform 1.9.x + `npm run check:terraform`). O primeiro `init` baixa providers (rede).
+
+Isto não substitui `plan`/`apply` na sua conta; apenas aumenta a chance de pegar erros de sintaxe/formatação antes de merge. Se o clone do factory viver **dentro** de um monorepo (ex.: pasta `project-factory/`), ajuste `defaults.run.working-directory` e `cache-dependency-path` no workflow para apontar para essa pasta.
 
 ## Versionamento (CLI × template)
 

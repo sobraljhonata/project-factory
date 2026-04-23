@@ -9,6 +9,7 @@ import {
   readTemplateManifest,
   type InfraLayerId,
 } from "./generate";
+import { writeCliParseErrorJson } from "./json-cli";
 
 const SEMVER_RE = /^[0-9]+\.[0-9]+\.[0-9]+$/;
 
@@ -322,23 +323,98 @@ export function analyzeUpgradeDryRun(
   };
 }
 
+const UPGRADE_TIP_DOCTOR =
+  "Tip: for contract, files and placeholders run `project-factory doctor`";
+
+function worstRiskFromComponents(components: ComponentDrift[]): "HIGH" | "LOW" | null {
+  let worstRisk: "HIGH" | "LOW" | null = null;
+  for (const c of components) {
+    if (c.compare !== "behind") {
+      continue;
+    }
+    const bump = c.behindBump ?? computeBehindBump(c.projectVersion, c.factoryVersion);
+    const risk = riskForBehindBump(bump);
+    if (risk === "HIGH") {
+      worstRisk = "HIGH";
+    } else if (worstRisk !== "HIGH") {
+      worstRisk = "LOW";
+    }
+  }
+  return worstRisk;
+}
+
+/**
+ * Payload JSON estável para CI/scripts (`upgrade --dry-run --json`). Não altera `analyzeUpgradeDryRun`.
+ */
+export function serializeUpgradeDryRunReport(
+  report: UpgradeDryRunReport,
+): Record<string, unknown> {
+  const exitCode = upgradeDryRunExitCode(report);
+  const hasErrors = report.errors.length > 0;
+  const hasBehind = report.components.some((c) => c.compare === "behind");
+  const upgradeStatus: "UP_TO_DATE" | "BEHIND" | "FAILED" = hasErrors
+    ? "FAILED"
+    : hasBehind
+      ? "BEHIND"
+      : "UP_TO_DATE";
+  const worstRisk = worstRiskFromComponents(report.components);
+  const behind = report.components.filter((c) => c.compare === "behind").length;
+  const ahead = report.components.filter((c) => c.compare === "ahead").length;
+  const equal = report.components.filter((c) => c.compare === "equal").length;
+
+  const componentsOut = report.components.map((c) => {
+    const row: Record<string, unknown> = {
+      label: c.label,
+      projectVersion: c.projectVersion,
+      factoryVersion: c.factoryVersion,
+      compare: c.compare,
+    };
+    if (c.behindBump !== undefined) {
+      row.behindBump = c.behindBump;
+    }
+    if (c.compare === "behind") {
+      const bump = c.behindBump ?? computeBehindBump(c.projectVersion, c.factoryVersion);
+      row.risk = riskForBehindBump(bump);
+    }
+    return row;
+  });
+
+  return {
+    ok: exitCode === 0,
+    command: "upgrade-dry-run",
+    exitCode,
+    projectRoot: report.projectRoot,
+    templatesRoot: report.templatesRoot,
+    upgradeStatus,
+    worstRisk,
+    errors: report.errors,
+    components: componentsOut,
+    summary: {
+      errors: report.errors.length,
+      components: report.components.length,
+      behind,
+      ahead,
+      equal,
+    },
+    tip: UPGRADE_TIP_DOCTOR,
+  };
+}
+
+function printUpgradeDryRunReportJson(report: UpgradeDryRunReport): void {
+  console.log(JSON.stringify(serializeUpgradeDryRunReport(report), null, 2));
+}
+
 export function printUpgradeDryRunReport(report: UpgradeDryRunReport): void {
   console.log(`[upgrade --dry-run] projeto: ${report.projectRoot}`);
   console.log(`[upgrade --dry-run] templates factory: ${report.templatesRoot}`);
   console.log("");
 
-  let hasBehind = false;
-  let worstRisk: "HIGH" | "LOW" | null = null;
+  const hasBehind = report.components.some((c) => c.compare === "behind");
+  const worstRisk = worstRiskFromComponents(report.components);
   for (const c of report.components) {
     if (c.compare === "behind") {
-      hasBehind = true;
       const bump = c.behindBump ?? computeBehindBump(c.projectVersion, c.factoryVersion);
       const risk = riskForBehindBump(bump);
-      if (risk === "HIGH") {
-        worstRisk = "HIGH";
-      } else if (worstRisk !== "HIGH") {
-        worstRisk = "LOW";
-      }
       const bumpLabel = bump === "major" ? "MAJOR" : bump === "minor" ? "MINOR" : "PATCH";
       console.error(
         `[DEFASAGEM] ${c.label}: projeto ${c.projectVersion} < factory ${c.factoryVersion}`,
@@ -383,9 +459,7 @@ export function printUpgradeDryRunReport(report: UpgradeDryRunReport): void {
     console.log("Upgrade status: UP TO DATE");
   }
 
-  console.log(
-    "Tip: for contract, files and placeholders run `project-factory doctor`",
-  );
+  console.log(UPGRADE_TIP_DOCTOR);
 }
 
 export function upgradeDryRunExitCode(report: UpgradeDryRunReport): number {
@@ -400,6 +474,8 @@ export async function runUpgradeDryRunCommand(
   hooks: { cwd?: string } = {},
 ): Promise<number> {
   const cwd = hooks.cwd ?? process.cwd();
+  const wantJson = argv.includes("--json");
+
   let projectPath = ".";
   let factoryRoot: string | undefined;
   let debug = false;
@@ -420,11 +496,12 @@ export async function runUpgradeDryRunCommand(
       "--factory-root <dir>",
       "Raiz do repositório project-factory (deve conter a pasta templates/). Padrão: inferido a partir desta CLI (checkout típico).",
     )
+    .option("--json", "Emitir um único objeto JSON em stdout (automação/CI)", false)
     .option("--debug", "Log extra no stderr", false)
     .action(
       (
         p: string,
-        opts: { dryRun?: boolean; factoryRoot?: string; debug?: boolean },
+        opts: { dryRun?: boolean; factoryRoot?: string; debug?: boolean; json?: boolean },
       ) => {
         projectPath = p;
         factoryRoot = opts.factoryRoot?.trim() || undefined;
@@ -438,11 +515,25 @@ export async function runUpgradeDryRunCommand(
     if (debug && e) {
       console.error("[project-factory:debug] upgrade parse error", e);
     }
+    if (wantJson) {
+      const msg = e instanceof Error ? e.message : String(e);
+      const code = e instanceof CommanderError ? (e.exitCode ?? 1) : 1;
+      writeCliParseErrorJson("upgrade-dry-run", msg, code);
+      return code;
+    }
     if (e instanceof CommanderError) {
-      return e.exitCode;
+      return e.exitCode ?? 1;
     }
     return 1;
   }
+
+  const opts = program.opts<{
+    dryRun?: boolean;
+    factoryRoot?: string;
+    debug?: boolean;
+    json?: boolean;
+  }>();
+  const jsonOut = Boolean(opts.json);
 
   const absProject = path.resolve(cwd, projectPath);
   let templatesRoot: string;
@@ -460,6 +551,10 @@ export async function runUpgradeDryRunCommand(
   }
 
   const report = analyzeUpgradeDryRun(absProject, templatesRoot);
-  printUpgradeDryRunReport(report);
+  if (jsonOut) {
+    printUpgradeDryRunReportJson(report);
+  } else {
+    printUpgradeDryRunReport(report);
+  }
   return upgradeDryRunExitCode(report);
 }

@@ -7,6 +7,7 @@ import {
   findFilesWithUnresolvedPlaceholders,
   PROJECT_FACTORY_PRODUCT_NAME,
 } from "./generate";
+import { writeCliParseErrorJson } from "./json-cli";
 
 const SEMVER_RE = /^[0-9]+\.[0-9]+\.[0-9]+$/;
 
@@ -296,9 +297,7 @@ export function diagnoseProject(root: string): DoctorReport {
 }
 
 function printDoctorUpgradeHint(): void {
-  console.log(
-    "Tip: for version drift vs factory templates run `project-factory upgrade --dry-run`",
-  );
+  console.log(DOCTOR_TIP_UPGRADE);
 }
 
 export function printDoctorReport(report: DoctorReport): void {
@@ -333,6 +332,37 @@ export function doctorExitCode(report: DoctorReport): number {
   return report.findings.some((f) => f.severity === "error") ? 1 : 0;
 }
 
+const DOCTOR_TIP_UPGRADE =
+  "Tip: for version drift vs factory templates run `project-factory upgrade --dry-run`";
+
+/**
+ * Payload JSON estável para CI/scripts (`doctor --json`). Não altera `diagnoseProject`.
+ */
+export function serializeDoctorReport(report: DoctorReport): Record<string, unknown> {
+  const errors = report.findings.filter((f) => f.severity === "error");
+  const warns = report.findings.filter((f) => f.severity === "warn");
+  const exitCode = doctorExitCode(report);
+  const status =
+    errors.length > 0 ? "fail" : warns.length > 0 ? "warn" : "ok";
+  const base: Record<string, unknown> = {
+    ok: exitCode === 0,
+    command: "doctor",
+    exitCode,
+    root: report.root,
+    summary: { errors: errors.length, warnings: warns.length },
+    findings: report.findings,
+    status,
+  };
+  if (errors.length === 0) {
+    base.tip = DOCTOR_TIP_UPGRADE;
+  }
+  return base;
+}
+
+function printDoctorReportJson(report: DoctorReport): void {
+  console.log(JSON.stringify(serializeDoctorReport(report), null, 2));
+}
+
 /**
  * Executa o subcomando `doctor` (argv já sem o token `doctor`).
  * Retorna código de saída (0 ou 1).
@@ -342,6 +372,7 @@ export async function runDoctorCommand(
   hooks: { cwd?: string } = {},
 ): Promise<number> {
   const cwd = hooks.cwd ?? process.cwd();
+  const wantJson = argv.includes("--json");
 
   let targetPath = ".";
   let debug = false;
@@ -354,9 +385,10 @@ export async function runDoctorCommand(
       "Verifica se o diretório parece um projeto gerado pelo project-factory e está alinhado ao contrato mínimo (offline).",
     )
     .argument("[path]", "Pasta do projeto a inspecionar", ".")
+    .option("--json", "Emitir um único objeto JSON em stdout (automação/CI)", false)
     .option("--debug", "Log extra no stderr", false)
     .allowExcessArguments(false)
-    .action((p: string, opts: { debug?: boolean }) => {
+    .action((p: string, opts: { debug?: boolean; json?: boolean }) => {
       targetPath = p;
       debug = Boolean(opts.debug);
     });
@@ -367,11 +399,20 @@ export async function runDoctorCommand(
     if (debug) {
       console.error("[project-factory:debug] doctor parse error", e);
     }
+    if (wantJson) {
+      const msg = e instanceof Error ? e.message : String(e);
+      const code = e instanceof CommanderError ? (e.exitCode ?? 1) : 1;
+      writeCliParseErrorJson("doctor", msg, code);
+      return code;
+    }
     if (e instanceof CommanderError) {
-      return e.exitCode;
+      return e.exitCode ?? 1;
     }
     return 1;
   }
+
+  const opts = program.opts<{ debug?: boolean; json?: boolean }>();
+  const jsonOut = Boolean(opts.json);
 
   const root = path.resolve(cwd, targetPath);
   if (debug) {
@@ -380,6 +421,10 @@ export async function runDoctorCommand(
   }
 
   const report = diagnoseProject(root);
-  printDoctorReport(report);
+  if (jsonOut) {
+    printDoctorReportJson(report);
+  } else {
+    printDoctorReport(report);
+  }
   return doctorExitCode(report);
 }

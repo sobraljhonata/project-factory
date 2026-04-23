@@ -19,11 +19,13 @@ export const PRESETS: Record<
   },
   "aws-standard": {
     infra: ["foundation", "terraformRemoteState"],
-    description: "Foundation AWS + remote state (S3 + DynamoDB lock).",
+    description:
+      "Foundation (VPC/ECS/…) + remote state (S3 + DynamoDB lock, template mínimo).",
   },
   "internal-enterprise": {
     infra: ["foundation", "aurora", "s3", "terraformRemoteState"],
-    description: "Todas as camadas Terraform disponíveis neste factory.",
+    description:
+      "Todas as camadas do catálogo: foundation, aurora, s3 + remote state (S3 + lock).",
   },
 };
 

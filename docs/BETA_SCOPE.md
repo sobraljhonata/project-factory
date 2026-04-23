@@ -27,8 +27,8 @@ Ferramenta de **geração** de projetos Node.js + Express + TypeScript a partir 
 - **Não** é produto “estável” para consumo público sem revisão de release.
 - **Não** há comando `upgrade` nem migração automática de projetos já gerados — ver [UPGRADE_VISION.md](UPGRADE_VISION.md).
 - **Não** há suporte formal a versões de Node além das testadas no CI (hoje **Node 22** no workflow; README pede **Node 20+** — tratar como orientação; divergências podem existir).
-- **Infra Terraform**: apenas **cópia** de arquivos; **não** há validação de `plan`/`apply` nem de credenciais AWS na beta.
-- **Camada `terraformRemoteState`**: só está disponível se o diretório existir em `templates/`; caso contrário a geração falha ao selecionar — comportamento esperado até o template existir.
+- **Infra Terraform**: na geração, apenas **cópia** de arquivos para o seu repositório; **não** há `plan`/`apply` nem checagem de credenciais AWS no fluxo do app. No **repositório do factory**, o CI pode rodar `npm run check:terraform` (`fmt` + `validate` em cópia gerada) — não substitui validação na sua conta.
+- **Camada `terraformRemoteState`**: deve existir em `templates/` (manifest + Terraform mínimo); sem pasta, a geração falha ao selecionar a camada.
 
 ## Fluxos não suportados (use por sua conta)
 
