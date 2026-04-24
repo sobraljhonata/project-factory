@@ -111,7 +111,7 @@ describe("generateProject (integração leve)", () => {
     expect(meta.generator).toBe(PROJECT_FACTORY_PRODUCT_NAME);
     expect(meta.generatorVersion).toBeTruthy();
     expect(meta.template).toBe("api-node-express");
-    expect(meta.templateVersion).toBe("1.0.1");
+    expect(meta.templateVersion).toBe("1.0.2");
     expect(meta.generatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     expect(meta.infraTemplates).toEqual([]);
     expect(meta.applicationModules).toEqual([]);
@@ -194,6 +194,20 @@ describe("generateProject (integração leve)", () => {
         ),
       ),
     ).toBe(true);
+    expect(
+      fs.existsSync(
+        path.join(
+          targetDir,
+          "src/lib/project-factory-modules/observability-basic/access-log-middleware.ts",
+        ),
+      ),
+    ).toBe(true);
+    const midObs = fs.readFileSync(
+      path.join(targetDir, "src/core/config/middlewares.ts"),
+      "utf8",
+    );
+    expect(midObs).toContain("observability-basic");
+    expect(midObs).toContain("registerHttpAccessLog");
     expect(fs.existsSync(path.join(targetDir, "module.json"))).toBe(false);
 
     const raw = fs.readFileSync(path.join(targetDir, ".project-factory.json"), "utf8");
@@ -202,7 +216,7 @@ describe("generateProject (integração leve)", () => {
     };
     expect(meta.applicationModules).toEqual([
       { id: "swagger-rich", version: "1.1.0" },
-      { id: "observability-basic", version: "1.0.0" },
+      { id: "observability-basic", version: "1.0.1" },
     ]);
 
     fs.rmSync(tmp, { recursive: true, force: true });

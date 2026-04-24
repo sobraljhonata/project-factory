@@ -10,7 +10,7 @@ Ponto de entrada para **toda** a documentação do repositório. O [README princ
 | [BETA_SCOPE.md](BETA_SCOPE.md) | O que a beta promete e o que **não** promete |
 | [GENERATION_CONTRACT.md](GENERATION_CONTRACT.md) | Contrato mínimo do que um projeto “gerado com sucesso” deve ter |
 | [VERSIONING.md](VERSIONING.md) | `generatorVersion` vs `templateVersion`, metadata em `.project-factory.json` |
-| [application-modules.md](application-modules.md) | Módulos opcionais (`swagger-rich`, `auth-jwt`, …): estrutura, costura, drift |
+| [application-modules.md](application-modules.md) | Módulos opcionais (`swagger-rich`, `auth-jwt`, `observability-basic`, …): estrutura, costura, drift |
 
 ## Operar um projeto já gerado
 

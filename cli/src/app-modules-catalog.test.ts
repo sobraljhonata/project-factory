@@ -59,5 +59,20 @@ describe("catálogo APPLICATION_MODULES vs templates/", () => {
         expect(fs.existsSync(p)).toBe(true);
       });
     }
+
+    if (moduleId === "observability-basic") {
+      it(`${moduleId} inclui access-log-middleware.ts (V3.4)`, () => {
+        const p = path.join(
+          templatesRoot,
+          dir,
+          "src",
+          "lib",
+          "project-factory-modules",
+          moduleId,
+          "access-log-middleware.ts",
+        );
+        expect(fs.existsSync(p)).toBe(true);
+      });
+    }
   }
 });

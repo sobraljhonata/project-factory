@@ -1,6 +1,6 @@
-# Módulos opcionais de aplicação (convenção V3.2.1+)
+# Módulos opcionais de aplicação (convenção V3.2.1+ / V3.4)
 
-Este documento formaliza o padrão **leve** usado pelo factory para módulos sob `templates/application-modules/<id>/`, com exemplos **`swagger-rich`** (OpenAPI) e **`auth-jwt`** (Bearer JWT verify-only). Não há plugin system, auto-discovery nem hooks genéricos no core da CLI.
+Este documento formaliza o padrão **leve** usado pelo factory para módulos sob `templates/application-modules/<id>/`, com exemplos **`swagger-rich`** (OpenAPI), **`auth-jwt`** (Bearer JWT verify-only) e **`observability-basic`** (access log). Não há plugin system, auto-discovery nem hooks genéricos no core da CLI.
 
 ## Quem precisa ler
 
@@ -27,10 +27,6 @@ templates/application-modules/<id>/
 ```
 
 **Regra de ouro:** ficheiros que **não** devem ir para a raiz do projeto (OpenAPI, README do módulo, configs opcionais) ficam em `src/lib/project-factory-modules/<id>/`. O `module.json` fica só no template; a CLI **remove** `module.json` da raiz do output após cada cópia de módulo.
-
-### Módulo “só documentação / placeholder”
-
-Ex.: **`observability-basic`**: pode ser apenas `README.md` na mesma árvore `src/lib/project-factory-modules/<id>/`, sem costura no core — zero ficheiros extra no runtime.
 
 ## 3. Como criar um módulo novo (checklist)
 
@@ -77,14 +73,21 @@ suficiente — **sem** framework, **sem** registry em runtime. Só introduzir qu
 - Costura → `env.ts` + `middlewares.ts` (verify-only; sem login/OIDC)
 - Drift → bump `module.json` quando a política de verificação ou contrato HTTP mudarem
 
-## 8. Próximos módulos
+## 8. Exemplo mental: `observability-basic` (V3.4)
+
+- Catálogo → `application-modules/observability-basic`
+- Assets → `access-log-middleware.ts`, `README.md`, testes opcionais no módulo
+- Costura → **só** `middlewares.ts` (após `correlationIdMiddleware`; `require` condicional)
+- Drift → bump `module.json` quando o formato de log ou exclusões (`/health`, `/ready`, `/ping`) mudarem
+
+## 9. Próximos módulos
 
 Manter o mesmo desenho: README claro, assets sob `src/lib/project-factory-modules/<id>/`, costura mínima no stack, semver em `module.json`. Fora de escopo: módulos remotos, dependências entre módulos, registry em runtime, AST, plugin system.
 
-## 9. Referências no código
+## 10. Referências no código
 
 - Cópia e metadata: `cli/src/generate.ts` (loop `appModules`, `readApplicationModuleManifest`).
 - Catálogo: `cli/src/app-modules-catalog.ts`.
 - Drift: `cli/src/upgrade-dry-run.ts` (componentes `app:<id>`).
-- Exemplos: `templates/application-modules/swagger-rich/`, `templates/application-modules/auth-jwt/`.
-- Costuras: `templates/api-node-express/src/core/config/swagger.ts`; `env.ts` + `middlewares.ts` (auth-jwt).
+- Exemplos: `templates/application-modules/swagger-rich/`, `templates/application-modules/auth-jwt/`, `templates/application-modules/observability-basic/`.
+- Costuras: `templates/api-node-express/src/core/config/swagger.ts`; `env.ts` + `middlewares.ts` (auth-jwt); `middlewares.ts` (observability-basic).

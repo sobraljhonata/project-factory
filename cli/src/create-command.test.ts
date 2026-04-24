@@ -135,6 +135,41 @@ describe("runCreateCommand", () => {
     fs.rmSync(base, { recursive: true, force: true });
   });
 
+  it("com --yes --module observability-basic copia módulo, metadata e costura em middlewares", async () => {
+    const base = fs.mkdtempSync(path.join(os.tmpdir(), "pf-cr-obs-"));
+    const errSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    const logSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+
+    const code = await runCreateCommand(
+      [
+        "obs-app",
+        "--yes",
+        "--package-name",
+        "obs-app",
+        "--module",
+        "observability-basic",
+      ],
+      { cwd: base },
+    );
+
+    expect(code).toBe(0);
+    const targetDir = path.join(base, "obs-app");
+    expect(
+      fs.existsSync(
+        path.join(targetDir, "src/lib/project-factory-modules/observability-basic/access-log-middleware.ts"),
+      ),
+    ).toBe(true);
+    const mid = fs.readFileSync(path.join(targetDir, "src/core/config/middlewares.ts"), "utf8");
+    expect(mid).toContain("registerHttpAccessLog");
+    const raw = fs.readFileSync(path.join(targetDir, ".project-factory.json"), "utf8");
+    const meta = JSON.parse(raw) as { applicationModules: { id: string; version: string }[] };
+    expect(meta.applicationModules).toEqual([{ id: "observability-basic", version: "1.0.1" }]);
+
+    logSpy.mockRestore();
+    errSpy.mockRestore();
+    fs.rmSync(base, { recursive: true, force: true });
+  });
+
   it("com --yes --json e nome de pacote inválido emite JSON de erro", async () => {
     const base = fs.mkdtempSync(path.join(os.tmpdir(), "pf-cr-badpkg-"));
     const spy = jest.spyOn(console, "log").mockImplementation(() => {});

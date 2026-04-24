@@ -42,7 +42,7 @@ Todos suportam **`--json`** para CI (ver secções abaixo).
 
 **Automação (`create --json`, V2.6):** `project-factory create minha-api --yes --package-name minha-api --json` (o **`--json` exige `--yes`**) imprime um único objeto JSON em stdout com `ok`, caminhos resolvidos, `infra`, `applicationModules`, `template` / `templateVersion` / `generatorVersion` (lidos de `.project-factory.json` após a geração) e `nextSteps`. Erros de parse/CLI ou de validação com `--json` seguem o mesmo contrato que `doctor`/`upgrade` (`ok: false`, `command: "create"`, `error`, `exitCode`). Sem `--json`, a saída humana permanece igual.
 
-**Módulos opcionais de aplicação (V3.0+):** após copiar o stack `api-node-express` (inalterado), podes acrescentar capacidades com **`--module`** (lista separada por vírgulas, como `--infra`). Catálogo inicial pequeno: `swagger-rich`, `observability-basic`, `auth-jwt` (pastas sob `templates/application-modules/<id>/` com `module.json` e ficheiros sob `src/`). O metadata `.project-factory.json` passa a incluir **`applicationModules`** (par a `{ id, version }`); o `doctor` valida esse campo quando presente. **V3.2:** com **`swagger-rich`**, o OpenAPI base é fundido com **`openapi.fragment.yaml`** do módulo (tags, schemas/respostas de exemplo, etc.) se o ficheiro existir no projeto gerado. **V3.3:** com **`auth-jwt`**, o stack valida tokens **Bearer** HS256 (emitente externo). **Convenção e exemplos:** [docs/application-modules.md](docs/application-modules.md).
+**Módulos opcionais de aplicação (V3.0+):** após copiar o stack `api-node-express` (inalterado), podes acrescentar capacidades com **`--module`** (lista separada por vírgulas, como `--infra`). Catálogo inicial pequeno: `swagger-rich`, `observability-basic`, `auth-jwt` (pastas sob `templates/application-modules/<id>/` com `module.json` e ficheiros sob `src/`). O metadata `.project-factory.json` passa a incluir **`applicationModules`** (par a `{ id, version }`); o `doctor` valida esse campo quando presente. **V3.2:** com **`swagger-rich`**, o OpenAPI base é fundido com **`openapi.fragment.yaml`** do módulo (tags, schemas/respostas de exemplo, etc.) se o ficheiro existir no projeto gerado. **V3.3:** com **`auth-jwt`**, o stack valida tokens **Bearer** HS256 (emitente externo). **V3.4:** com **`observability-basic`**, access log HTTP estruturado (duração + correlation id; sem body/headers/query). **Convenção e exemplos:** [docs/application-modules.md](docs/application-modules.md).
 
 ### Presets de infra (`--preset`, V2.2)
 
@@ -198,7 +198,7 @@ Gera um app em diretório temporário, roda `npm install`, `npm run check` e `np
 |-------|----------|
 | `cli/` | Motor da CLI: cópia, substituição `{{PLACEHOLDER}}`, validações, comandos `doctor` / `inspect` / `upgrade`. |
 | `templates/api-node-express/` | App HTTP mínima (Express, health, ping, Sequelize, Jest) + `template.json`. |
-| `templates/application-modules/*` | Módulos opcionais (`swagger-rich`, `auth-jwt`, …): `module.json` + ficheiros sob `src/`. |
+| `templates/application-modules/*` | Módulos opcionais (`swagger-rich`, `auth-jwt`, `observability-basic`, …): `module.json` + ficheiros sob `src/`. |
 | `templates/infra/aws/*` | Terraform por camada; copiado só se selecionado; cada camada tem `template.json`. |
 
 Placeholders principais: `PACKAGE_NAME`, `PROJECT_SLUG`, `API_TITLE`, `API_DESCRIPTION`, `API_VERSION`, `APP_PORT`, `AWS_REGION`.
