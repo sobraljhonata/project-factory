@@ -1,12 +1,17 @@
 #!/usr/bin/env node
 import { runCreateCommand } from "./create-command";
 import { runDoctorCommand } from "./doctor";
+import { runInspectCommand } from "./inspect";
 import { runUpgradeDryRunCommand } from "./upgrade-dry-run";
 
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
   if (argv[0] === "doctor") {
     process.exitCode = await runDoctorCommand(argv.slice(1));
+    return;
+  }
+  if (argv[0] === "inspect") {
+    process.exitCode = await runInspectCommand(argv.slice(1));
     return;
   }
   if (argv[0] === "upgrade") {

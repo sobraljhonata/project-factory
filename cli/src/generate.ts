@@ -1,6 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import {
+  APPLICATION_MODULES,
+  type ApplicationModuleId,
+} from "./app-modules-catalog";
+
 export type InfraLayerId =
   | "foundation"
   | "aurora"
@@ -46,6 +51,7 @@ export type TemplateManifest = {
 };
 
 const TEMPLATE_MANIFEST_FILE = "template.json";
+const MODULE_MANIFEST_FILE = "module.json";
 
 /**
  * Nome estável do produto em `.project-factory.json` → `generator`.
@@ -111,6 +117,25 @@ export function readTemplateManifest(
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     throw new Error(`Manifest de template inválido (JSON): ${p} — ${msg}`);
+  }
+  return parseTemplateManifest(parsed, p, expectedId);
+}
+
+/** Manifest `module.json` em módulos opcionais sob `templates/application-modules/`. */
+export function readApplicationModuleManifest(
+  moduleDir: string,
+  expectedId?: string,
+): TemplateManifest {
+  const p = path.join(moduleDir, MODULE_MANIFEST_FILE);
+  if (!fs.existsSync(p)) {
+    throw new Error(`Manifest de módulo ausente: ${p}`);
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(fs.readFileSync(p, "utf8"));
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    throw new Error(`Manifest de módulo inválido (JSON): ${p} — ${msg}`);
   }
   return parseTemplateManifest(parsed, p, expectedId);
 }
@@ -188,6 +213,8 @@ export function applyTokens(root: string, tokens: Record<string, string>): void 
 export type GenerateOptions = {
   targetDir: string;
   infra: InfraLayerId[];
+  /** Módulos opcionais de aplicação (V3), na ordem selecionada. */
+  appModules?: ApplicationModuleId[];
   vars: GenerateVars;
   debug?: boolean;
 };
@@ -215,6 +242,8 @@ export type ProjectFactoryMetadata = {
   generatedAt: string;
   /** Camadas Terraform copiadas, na ordem selecionada (vazio se nenhuma). */
   infraTemplates: { id: string; version: string }[];
+  /** Módulos de aplicação opcionais copiados na geração (V3). */
+  applicationModules: { id: string; version: string }[];
 };
 
 export function readGeneratorInfo(): { name: string; version: string } {
@@ -232,6 +261,7 @@ function writeProjectFactoryMetadata(
   targetDir: string,
   stackManifest: TemplateManifest,
   infraTemplates: TemplateManifest[],
+  applicationModules: TemplateManifest[],
   debug: boolean | undefined,
 ): void {
   const { version: cliVersion } = readGeneratorInfo();
@@ -242,6 +272,7 @@ function writeProjectFactoryMetadata(
     templateVersion: stackManifest.version,
     generatedAt: new Date().toISOString(),
     infraTemplates: infraTemplates.map((m) => ({ id: m.id, version: m.version })),
+    applicationModules: applicationModules.map((m) => ({ id: m.id, version: m.version })),
   };
   const p = path.join(targetDir, ".project-factory.json");
   fs.writeFileSync(p, `${JSON.stringify(meta, null, 2)}\n`, "utf8");
@@ -260,6 +291,7 @@ export function generateProject(opts: GenerateOptions): void {
     templatesRoot,
     targetDir: opts.targetDir,
     infra: opts.infra,
+    appModules: opts.appModules ?? [],
     tokenKeys: Object.keys(opts.vars),
   });
 
@@ -295,11 +327,36 @@ export function generateProject(opts: GenerateOptions): void {
     debugLog(opts.debug, "infra copiada", { id, from, to });
   }
 
+  const appModuleIds = opts.appModules ?? [];
+  const applicationModuleList: TemplateManifest[] = [];
+  for (const id of appModuleIds) {
+    const mod = APPLICATION_MODULES[id];
+    const from = path.join(templatesRoot, mod.dir);
+    if (!fs.existsSync(from)) {
+      throw new Error(`Módulo de aplicação ausente: ${from}`);
+    }
+    const manifest = readApplicationModuleManifest(from, id);
+    applicationModuleList.push(manifest);
+    copyDir(from, opts.targetDir);
+    const droppedManifest = path.join(opts.targetDir, MODULE_MANIFEST_FILE);
+    try {
+      if (fs.existsSync(droppedManifest)) {
+        fs.unlinkSync(droppedManifest);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new Error(`Falha ao remover ${droppedManifest} do output: ${msg}`);
+    }
+    applyTokens(opts.targetDir, tokens);
+    debugLog(opts.debug, "módulo de aplicação copiado", { id, from });
+  }
+
   writeInfraManifest(opts.targetDir, opts.infra);
   writeProjectFactoryMetadata(
     opts.targetDir,
     stackManifest,
     infraTemplateList,
+    applicationModuleList,
     opts.debug,
   );
   assertNoUnresolvedPlaceholders(opts.targetDir);
@@ -366,3 +423,5 @@ function writeInfraManifest(targetDir: string, infra: InfraLayerId[]): void {
   fs.mkdirSync(path.dirname(p), { recursive: true });
   fs.writeFileSync(p, lines.join("\n"), "utf8");
 }
+
+export type { ApplicationModuleId } from "./app-modules-catalog";

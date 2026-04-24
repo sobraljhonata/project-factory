@@ -2,7 +2,7 @@
 
 API Node.js + Express + TypeScript (template project-factory).
 
-O arquivo **`.project-factory.json`** (raiz) registra o produto gerador, versões da **CLI** e do **template** (`template` / `templateVersion`), além de camadas infra copiadas — ver comentários no JSON ou a documentação do factory em `docs/VERSIONING.md`.
+O arquivo **`.project-factory.json`** (raiz) registra o produto gerador, versões da **CLI** e do **template** (`template` / `templateVersion`), além de camadas infra copiadas — ver comentários no JSON. Significado dos campos: documentação do repositório **project-factory** em `docs/VERSIONING.md` (não faz parte do app gerado).
 
 **Arquitetura:** `src/core/` é só infraestrutura mínima; regras de negócio vão em `src/modules/`. JWT e HATEOAS opcionais estão em `src/lib/` — ver [docs/CORE.md](docs/CORE.md).
 

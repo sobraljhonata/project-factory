@@ -1,6 +1,6 @@
 # Contributing
 
-Antes de contribuir, leia o escopo da **beta interna**: [docs/BETA_SCOPE.md](docs/BETA_SCOPE.md).
+Antes de contribuir, leia o escopo da **beta interna**: [docs/BETA_SCOPE.md](docs/BETA_SCOPE.md). Índice geral da documentação: [docs/README.md](docs/README.md).
 
 ## Objetivo
 Este repositório possui dois papéis:

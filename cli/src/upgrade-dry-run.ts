@@ -3,9 +3,11 @@ import path from "node:path";
 
 import { Command, CommanderError } from "commander";
 
+import { APPLICATION_MODULES, type ApplicationModuleId } from "./app-modules-catalog";
 import {
   getTemplatesRoot,
   INFRA_LAYERS,
+  readApplicationModuleManifest,
   readTemplateManifest,
   type InfraLayerId,
 } from "./generate";
@@ -153,6 +155,7 @@ function readProjectMetadata(projectRoot: string): {
     template: string;
     templateVersion: string;
     infraTemplates: { id: string; version: string }[];
+    applicationModules: { id: string; version: string }[];
   };
 } | { ok: false; errors: string[] } {
   const errors: string[] = [];
@@ -200,6 +203,48 @@ function readProjectMetadata(projectRoot: string): {
       }
     }
   }
+
+  let applicationModules: { id: string; version: string }[] = [];
+  if (errors.length === 0 && o.applicationModules !== undefined) {
+    if (!Array.isArray(o.applicationModules)) {
+      errors.push('Campo "applicationModules" deve ser um array em .project-factory.json.');
+    } else {
+      let appModsValid = true;
+      for (let i = 0; i < o.applicationModules.length; i++) {
+        const item = o.applicationModules[i];
+        if (
+          item === null ||
+          typeof item !== "object" ||
+          Array.isArray(item) ||
+          !isNonEmptyString((item as Record<string, unknown>).id) ||
+          !isNonEmptyString((item as Record<string, unknown>).version)
+        ) {
+          errors.push(
+            `applicationModules[${i}] inválido (esperado { id, version }).`,
+          );
+          appModsValid = false;
+          break;
+        }
+        const ver = String((item as Record<string, unknown>).version).trim();
+        if (!SEMVER_RE.test(ver)) {
+          errors.push(
+            `applicationModules[${i}].version deve ser semver MAJOR.MINOR.PATCH.`,
+          );
+          appModsValid = false;
+          break;
+        }
+      }
+      if (appModsValid && errors.length === 0) {
+        applicationModules = (o.applicationModules as { id: string; version: string }[]).map(
+          (x) => ({
+            id: String(x.id).trim(),
+            version: String(x.version).trim(),
+          }),
+        );
+      }
+    }
+  }
+
   if (errors.length > 0) {
     return { ok: false, errors };
   }
@@ -217,6 +262,7 @@ function readProjectMetadata(projectRoot: string): {
       template: String(o.template).trim(),
       templateVersion: String(o.templateVersion).trim(),
       infraTemplates,
+      applicationModules,
     },
   };
 }
@@ -312,6 +358,44 @@ export function analyzeUpgradeDryRun(
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       errors.push(`Falha ao ler manifest da camada "${layer.id}": ${msg}`);
+    }
+  }
+
+  const allowedAppIds = new Set(
+    Object.keys(APPLICATION_MODULES) as ApplicationModuleId[],
+  );
+  for (const mod of meta.data.applicationModules) {
+    if (!allowedAppIds.has(mod.id as ApplicationModuleId)) {
+      errors.push(
+        `Módulo de aplicação "${mod.id}" não reconhecido no factory (ids suportados: ${[...allowedAppIds].join(", ")}).`,
+      );
+      continue;
+    }
+    const modEntry = APPLICATION_MODULES[mod.id as ApplicationModuleId];
+    const modDir = path.join(absTemplates, modEntry.dir);
+    if (!fs.existsSync(path.join(modDir, "module.json"))) {
+      errors.push(
+        `Módulo de aplicação "${mod.id}": manifest ausente em ${path.join(modDir, "module.json")}.`,
+      );
+      continue;
+    }
+    try {
+      const factoryManifest = readApplicationModuleManifest(modDir, mod.id);
+      const cmp = compareSemver(mod.version, factoryManifest.version);
+      const behindBump =
+        cmp === "behind"
+          ? computeBehindBump(mod.version, factoryManifest.version)
+          : undefined;
+      components.push({
+        label: `app:${factoryManifest.id}`,
+        projectVersion: mod.version,
+        factoryVersion: factoryManifest.version,
+        compare: cmp,
+        behindBump,
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      errors.push(`Falha ao ler manifest do módulo "${mod.id}": ${msg}`);
     }
   }
 

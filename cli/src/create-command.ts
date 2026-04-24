@@ -10,6 +10,7 @@ import {
   type GenerateVars,
   type InfraLayerId,
 } from "./generate";
+import { parseApplicationModulesArg } from "./parse-app-modules";
 import { writeCliParseErrorJson } from "./json-cli";
 import { parseInfraArg } from "./parse-infra";
 import { assertPresetRequiresYes, resolveCreateInfra } from "./presets";
@@ -39,6 +40,7 @@ function readProjectFactoryMetaForJson(targetDir: string): {
   template: string;
   templateVersion: string;
   generatorVersion: string;
+  applicationModules: { id: string; version: string }[];
 } {
   const metaPath = path.join(targetDir, ".project-factory.json");
   const raw = fs.readFileSync(metaPath, "utf8");
@@ -55,7 +57,31 @@ function readProjectFactoryMetaForJson(targetDir: string): {
       ".project-factory.json gerado está incompleto (template / templateVersion / generatorVersion).",
     );
   }
-  return { template, templateVersion, generatorVersion };
+  const applicationModules = meta.applicationModules;
+  if (!Array.isArray(applicationModules)) {
+    throw new Error(
+      '.project-factory.json gerado está incompleto: "applicationModules" deve ser um array.',
+    );
+  }
+  const normalized: { id: string; version: string }[] = [];
+  for (const item of applicationModules) {
+    if (
+      item === null ||
+      typeof item !== "object" ||
+      Array.isArray(item) ||
+      typeof (item as Record<string, unknown>).id !== "string" ||
+      typeof (item as Record<string, unknown>).version !== "string"
+    ) {
+      throw new Error(
+        ".project-factory.json gerado: entrada inválida em applicationModules.",
+      );
+    }
+    normalized.push({
+      id: String((item as Record<string, unknown>).id),
+      version: String((item as Record<string, unknown>).version),
+    });
+  }
+  return { template, templateVersion, generatorVersion, applicationModules: normalized };
 }
 
 /**
@@ -80,6 +106,7 @@ export function serializeCreateSuccessReport(params: {
     packageName: params.packageName,
     title: params.title,
     infra: params.infraIds,
+    applicationModules: meta.applicationModules,
     region: params.region,
     preset: params.preset,
     template: meta.template,
@@ -119,6 +146,10 @@ function buildCreateProgram(): Command {
     .option(
       "--infra <lista>",
       "Camadas separadas por vírgula (foundation,aurora,s3,terraformRemoteState)",
+    )
+    .option(
+      "--module <lista>",
+      "Módulos opcionais de aplicação (V3), vírgula: swagger-rich, observability-basic, auth-jwt",
     )
     .option(
       "--preset <id>",
@@ -184,6 +215,7 @@ export async function runCreateCommand(
     packageName?: string;
     title?: string;
     infra?: string;
+    module?: string;
     preset?: string;
     region?: string;
     debug?: boolean;
@@ -254,6 +286,8 @@ export async function runCreateCommand(
 
     validatePackageNameForCli(resolvedPackage);
 
+    const appModuleIds = parseApplicationModulesArg(opts.module);
+
     const region = (opts.region ?? "us-east-1").trim();
     validateAwsRegion(region);
 
@@ -278,6 +312,7 @@ export async function runCreateCommand(
         preset: opts.preset,
         infraFromCli,
         infraIds,
+        appModules: appModuleIds,
         region: vars.AWS_REGION,
       });
     }
@@ -285,6 +320,7 @@ export async function runCreateCommand(
     generateProject({
       targetDir,
       infra: infraIds,
+      appModules: appModuleIds,
       vars,
       debug: opts.debug,
     });

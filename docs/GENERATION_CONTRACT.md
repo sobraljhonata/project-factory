@@ -18,7 +18,8 @@ Expectativas de **beta interna** (o que está dentro/fora do escopo): [BETA_SCOP
   - `template` — id do stack copiado (ex.: `api-node-express`), de `templates/.../template.json`;
   - `templateVersion` — semver do mesmo manifest (evolução do boilerplate, independente da CLI);
   - `generatedAt` — timestamp ISO 8601 da geração (parseável por `Date.parse`);
-  - `infraTemplates` — array de `{ id, version }` das camadas Terraform copiadas, na ordem selecionada (vazio se nenhuma).
+  - `infraTemplates` — array de `{ id, version }` das camadas Terraform copiadas, na ordem selecionada (vazio se nenhuma);
+  - `applicationModules` *(quando `--module` foi usado)* — array de `{ id, version }` dos módulos opcionais de aplicação copiados; o `doctor` valida quando presente; `upgrade --dry-run` compara com `templates/application-modules/<id>/module.json`.
 
 O arquivo `template.json` **não** é copiado para o projeto gerado: ids e versões ficam em `.project-factory.json`, evitando duas fontes de verdade no app. Ver [VERSIONING.md](VERSIONING.md).
 

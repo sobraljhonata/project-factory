@@ -1,6 +1,6 @@
 # Foundation — VPC, RDS MySQL, ECR, ALB, ECS Fargate, Secrets Manager, IAM
 
-Stack alinhado à documentação em `docs/deployment/`. **Padrão (laboratório):** sem NAT — tasks Fargate em **subnet pública** com IP público. **Produção:** ative `nat_gateway_enabled`, `acm_certificate_arn`, endurecimento de RDS, alarmes, WAF e autoscaling via variáveis — veja **`terraform.tfvars.production.example`**.
+**Nota:** guias operacionais de deploy (ECS, ALB, fases de publicação) podem viver noutro repositório ou wiki da equipa — **não** existem em `docs/deployment/` neste repo. **Padrão (laboratório):** sem NAT — tasks Fargate em **subnet pública** com IP público. **Produção:** ative `nat_gateway_enabled`, `acm_certificate_arn`, endurecimento de RDS, alarmes, WAF e autoscaling via variáveis — veja **`terraform.tfvars.production.example`**.
 
 ## Ordem recomendada
 
@@ -98,15 +98,15 @@ RDS com `skip_final_snapshot = true` (laboratório). Ajuste para produção.
 
 ## SSL MySQL (`DB_SSL=true`)
 
-A imagem Docker copia `certs/` para `/app/certs/`. A task **não** define `DB_SSL_CA_PATH`: o mysql2 usa o perfil **Amazon RDS** (`aws-ssl-profiles`). Ver [phase3-ecs-publish.md](../../../docs/deployment/phase3-ecs-publish.md).
+A imagem Docker copia `certs/` para `/app/certs/`. A task **não** define `DB_SSL_CA_PATH`: o mysql2 usa o perfil **Amazon RDS** (`aws-ssl-profiles`).
 
 ## HTTPS no ALB (front / navegador)
 
-`https://` na **443** exige **`acm_certificate_arn`** no `terraform.tfvars` (certificado ACM na mesma região + DNS do host apontando para o ALB). Sem isso, só **HTTP:80** funciona. Detalhes: seção **HTTPS no ALB (certificado ACM)** em [phase3-ecs-publish.md](../../../docs/deployment/phase3-ecs-publish.md).
+`https://` na **443** exige **`acm_certificate_arn`** no `terraform.tfvars` (certificado ACM na mesma região + DNS do host apontando para o ALB). Sem isso, só **HTTP:80** funciona.
 
 ## HTTPS sem domínio próprio (API Gateway)
 
-Com **`enable_apigatewayv2_alb_proxy = true`**, o Terraform cria um **API Gateway HTTP API** com URL **`https://{api-id}.execute-api.{região}.amazonaws.com`** (TLS gerenciado pela AWS). Ver [api-gateway-https-front.md](../../../docs/deployment/api-gateway-https-front.md) e o output **`api_gateway_https_base_url`**.
+Com **`enable_apigatewayv2_alb_proxy = true`**, o Terraform cria um **API Gateway HTTP API** com URL **`https://{api-id}.execute-api.{região}.amazonaws.com`** (TLS gerenciado pela AWS). Ver o output **`api_gateway_https_base_url`** após `terraform apply`.
 
 ## Aurora em vez do RDS deste stack
 
@@ -121,4 +121,4 @@ Na raiz do repositório (após `aws configure` e Docker):
 - `./scripts/ecr-build-push.sh` — exige `AWS_REGION`, `ECR_REPOSITORY_URL` (output `ecr_repository_url`).
 - `./scripts/ecs-force-new-deployment.sh` — exige `AWS_REGION`, `ECS_CLUSTER_NAME`, `ECS_SERVICE_NAME` (outputs homônimos).
 
-Smoke no ALB: `SMOKE_BASE_URL=$(terraform output -raw alb_public_base_url) npm run smoke:alb` — ver `docs/deployment/phase3-ecs-publish.md`.
+Smoke no ALB (no diretório do app gerado, se o script existir): `SMOKE_BASE_URL=$(terraform output -raw alb_public_base_url) npm run smoke:alb`.

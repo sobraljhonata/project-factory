@@ -1,0 +1,76 @@
+# Fragmento opcional (módulo swagger-rich V3.2).
+# Fundido com src/core/docs/swagger/base.yaml em loadSwaggerDocument() quando este ficheiro existe.
+
+tags:
+  - name: Conventions
+    description: |
+      Erros HTTP reutilizáveis e envelope com `meta.correlationId` (alinhado ao stack base).
+  - name: Examples
+    description: Exemplos de payloads para documentação no Swagger UI.
+
+components:
+  schemas:
+    ExamplePingEnvelope:
+      type: object
+      description: Exemplo de resposta JSON alinhada ao padrão data + meta.
+      properties:
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              example: pong
+        meta:
+          $ref: "#/components/schemas/Meta"
+      required: [data, meta]
+
+  responses:
+    StandardBadRequest:
+      description: Parâmetros ou corpo inválidos
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ValidationErrorResponse"
+          examples:
+            validationExample:
+              summary: Erro de validação típico
+              value:
+                error:
+                  code: VALIDATION_ERROR
+                  message: "campo \"email\" é obrigatório"
+                  details:
+                    errors:
+                      - path: email
+                        message: required
+                meta:
+                  correlationId: "123e4567-e89b-12d3-a456-426614174000"
+    StandardUnauthorized:
+      description: Token ausente ou inválido
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/UnauthorizedResponse"
+          examples:
+            unauthorizedExample:
+              summary: Sem JWT
+              value:
+                error:
+                  code: UNAUTHORIZED
+                  message: Token não fornecido ou expirado
+                meta:
+                  correlationId: "123e4567-e89b-12d3-a456-426614174001"
+    StandardNotFound:
+      description: Recurso não encontrado
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          examples:
+            notFoundExample:
+              summary: Recurso inexistente
+              value:
+                error:
+                  code: NOT_FOUND
+                  message: Recurso não encontrado
+                meta:
+                  correlationId: "123e4567-e89b-12d3-a456-426614174002"

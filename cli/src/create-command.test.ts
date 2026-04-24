@@ -61,6 +61,80 @@ describe("runCreateCommand", () => {
     spy.mockRestore();
   });
 
+  it("com --yes --module copia módulos e metadata", async () => {
+    const base = fs.mkdtempSync(path.join(os.tmpdir(), "pf-cr-mod-"));
+    const errSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    const logSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+
+    const code = await runCreateCommand(
+      [
+        "with-mod",
+        "--yes",
+        "--package-name",
+        "with-mod",
+        "--module",
+        "swagger-rich",
+      ],
+      { cwd: base },
+    );
+
+    expect(code).toBe(0);
+    const targetDir = path.join(base, "with-mod");
+    expect(
+      fs.existsSync(
+        path.join(targetDir, "src/lib/project-factory-modules/swagger-rich/README.md"),
+      ),
+    ).toBe(true);
+    expect(
+      fs.existsSync(
+        path.join(
+          targetDir,
+          "src/lib/project-factory-modules/swagger-rich/openapi.fragment.yaml",
+        ),
+      ),
+    ).toBe(true);
+    const raw = fs.readFileSync(path.join(targetDir, ".project-factory.json"), "utf8");
+    const meta = JSON.parse(raw) as { applicationModules: { id: string; version: string }[] };
+    expect(meta.applicationModules).toEqual([{ id: "swagger-rich", version: "1.1.0" }]);
+
+    logSpy.mockRestore();
+    errSpy.mockRestore();
+    fs.rmSync(base, { recursive: true, force: true });
+  });
+
+  it("com --yes --module auth-jwt copia módulo e metadata", async () => {
+    const base = fs.mkdtempSync(path.join(os.tmpdir(), "pf-cr-authjwt-"));
+    const errSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    const logSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+
+    const code = await runCreateCommand(
+      [
+        "jwt-mod",
+        "--yes",
+        "--package-name",
+        "jwt-mod",
+        "--module",
+        "auth-jwt",
+      ],
+      { cwd: base },
+    );
+
+    expect(code).toBe(0);
+    const targetDir = path.join(base, "jwt-mod");
+    expect(
+      fs.existsSync(
+        path.join(targetDir, "src/lib/project-factory-modules/auth-jwt/jwt-verify-middleware.ts"),
+      ),
+    ).toBe(true);
+    const raw = fs.readFileSync(path.join(targetDir, ".project-factory.json"), "utf8");
+    const meta = JSON.parse(raw) as { applicationModules: { id: string; version: string }[] };
+    expect(meta.applicationModules).toEqual([{ id: "auth-jwt", version: "1.0.0" }]);
+
+    logSpy.mockRestore();
+    errSpy.mockRestore();
+    fs.rmSync(base, { recursive: true, force: true });
+  });
+
   it("com --yes --json e nome de pacote inválido emite JSON de erro", async () => {
     const base = fs.mkdtempSync(path.join(os.tmpdir(), "pf-cr-badpkg-"));
     const spy = jest.spyOn(console, "log").mockImplementation(() => {});

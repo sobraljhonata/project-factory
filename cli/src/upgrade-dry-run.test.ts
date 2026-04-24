@@ -3,6 +3,10 @@ import os from "node:os";
 import path from "node:path";
 
 import {
+  APPLICATION_MODULES,
+  type ApplicationModuleId,
+} from "./app-modules-catalog";
+import {
   analyzeUpgradeDryRun,
   compareSemver,
   computeBehindBump,
@@ -61,9 +65,37 @@ function writeProjectMeta(
     template: string;
     templateVersion: string;
     infraTemplates: { id: string; version: string }[];
+    applicationModules: { id: string; version: string }[];
   }> = {},
 ): void {
   const meta = {
+    generator: "project-factory",
+    generatorVersion: "0.1.0",
+    template: "api-node-express",
+    templateVersion: "1.0.0",
+    generatedAt: "2026-01-01T00:00:00.000Z",
+    infraTemplates: [] as { id: string; version: string }[],
+    applicationModules: [] as { id: string; version: string }[],
+    ...overrides,
+  };
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(
+    path.join(dir, ".project-factory.json"),
+    `${JSON.stringify(meta, null, 2)}\n`,
+    "utf8",
+  );
+}
+
+/** Metadata sem chave `applicationModules` (legado V3.0-). */
+function writeProjectMetaLegacyWithoutApplicationModules(
+  dir: string,
+  overrides: Partial<{
+    template: string;
+    templateVersion: string;
+    infraTemplates: { id: string; version: string }[];
+  }> = {},
+): void {
+  const meta: Record<string, unknown> = {
     generator: "project-factory",
     generatorVersion: "0.1.0",
     template: "api-node-express",
@@ -76,6 +108,20 @@ function writeProjectMeta(
   fs.writeFileSync(
     path.join(dir, ".project-factory.json"),
     `${JSON.stringify(meta, null, 2)}\n`,
+    "utf8",
+  );
+}
+
+function writeFactoryAppModule(
+  templatesRoot: string,
+  moduleId: ApplicationModuleId,
+  version: string,
+): void {
+  const dir = path.join(templatesRoot, APPLICATION_MODULES[moduleId].dir);
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(
+    path.join(dir, "module.json"),
+    `${JSON.stringify({ id: moduleId, version }, null, 2)}\n`,
     "utf8",
   );
 }
@@ -166,6 +212,141 @@ describe("analyzeUpgradeDryRun", () => {
     expect(upgradeDryRunExitCode(r)).toBe(1);
     fs.rmSync(base, { recursive: true, force: true });
   });
+
+  it("legado sem applicationModules no metadata equivale a []", () => {
+    const base = fs.mkdtempSync(path.join(os.tmpdir(), "pf-up-legacy-appmod-"));
+    const templatesRoot = path.join(base, "templates");
+    writeTemplateJson(
+      path.join(templatesRoot, "api-node-express"),
+      "api-node-express",
+      "1.0.0",
+    );
+    const proj = path.join(base, "app");
+    writeProjectMetaLegacyWithoutApplicationModules(proj, { templateVersion: "1.0.0" });
+
+    const r = analyzeUpgradeDryRun(proj, templatesRoot);
+    expect(r.errors).toHaveLength(0);
+    expect(r.components).toHaveLength(1);
+    expect(r.components[0].label).toBe("stack:api-node-express");
+    expect(upgradeDryRunExitCode(r)).toBe(0);
+    fs.rmSync(base, { recursive: true, force: true });
+  });
+
+  it("applicationModules alinhado com module.json do factory", () => {
+    const base = fs.mkdtempSync(path.join(os.tmpdir(), "pf-up-appmod-ok-"));
+    const templatesRoot = path.join(base, "templates");
+    writeTemplateJson(
+      path.join(templatesRoot, "api-node-express"),
+      "api-node-express",
+      "1.0.0",
+    );
+    writeFactoryAppModule(templatesRoot, "swagger-rich", "1.1.0");
+    const proj = path.join(base, "app");
+    writeProjectMeta(proj, {
+      templateVersion: "1.0.0",
+      applicationModules: [{ id: "swagger-rich", version: "1.1.0" }],
+    });
+
+    const r = analyzeUpgradeDryRun(proj, templatesRoot);
+    expect(r.errors).toHaveLength(0);
+    const app = r.components.find((c) => c.label === "app:swagger-rich");
+    expect(app?.compare).toBe("equal");
+    expect(upgradeDryRunExitCode(r)).toBe(0);
+    fs.rmSync(base, { recursive: true, force: true });
+  });
+
+  it("applicationModules behind quando factory mais novo", () => {
+    const base = fs.mkdtempSync(path.join(os.tmpdir(), "pf-up-appmod-beh-"));
+    const templatesRoot = path.join(base, "templates");
+    writeTemplateJson(
+      path.join(templatesRoot, "api-node-express"),
+      "api-node-express",
+      "1.0.0",
+    );
+    writeFactoryAppModule(templatesRoot, "swagger-rich", "2.0.0");
+    const proj = path.join(base, "app");
+    writeProjectMeta(proj, {
+      templateVersion: "1.0.0",
+      applicationModules: [{ id: "swagger-rich", version: "1.0.0" }],
+    });
+
+    const r = analyzeUpgradeDryRun(proj, templatesRoot);
+    expect(r.errors).toHaveLength(0);
+    const app = r.components.find((c) => c.label === "app:swagger-rich");
+    expect(app?.compare).toBe("behind");
+    expect(app?.behindBump).toBe("major");
+    expect(upgradeDryRunExitCode(r)).toBe(1);
+    fs.rmSync(base, { recursive: true, force: true });
+  });
+
+  it("applicationModules swagger-rich behind em MINOR quando factory 1.1.0 e projeto 1.0.0", () => {
+    const base = fs.mkdtempSync(path.join(os.tmpdir(), "pf-up-appmod-minor-"));
+    const templatesRoot = path.join(base, "templates");
+    writeTemplateJson(
+      path.join(templatesRoot, "api-node-express"),
+      "api-node-express",
+      "1.0.0",
+    );
+    writeFactoryAppModule(templatesRoot, "swagger-rich", "1.1.0");
+    const proj = path.join(base, "app");
+    writeProjectMeta(proj, {
+      templateVersion: "1.0.0",
+      applicationModules: [{ id: "swagger-rich", version: "1.0.0" }],
+    });
+
+    const r = analyzeUpgradeDryRun(proj, templatesRoot);
+    expect(r.errors).toHaveLength(0);
+    const app = r.components.find((c) => c.label === "app:swagger-rich");
+    expect(app?.compare).toBe("behind");
+    expect(app?.behindBump).toBe("minor");
+    expect(upgradeDryRunExitCode(r)).toBe(1);
+    fs.rmSync(base, { recursive: true, force: true });
+  });
+
+  it("applicationModules auth-jwt behind em PATCH quando factory 1.0.1 e projeto 1.0.0", () => {
+    const base = fs.mkdtempSync(path.join(os.tmpdir(), "pf-up-authjwt-patch-"));
+    const templatesRoot = path.join(base, "templates");
+    writeTemplateJson(
+      path.join(templatesRoot, "api-node-express"),
+      "api-node-express",
+      "1.0.0",
+    );
+    writeFactoryAppModule(templatesRoot, "auth-jwt", "1.0.1");
+    const proj = path.join(base, "app");
+    writeProjectMeta(proj, {
+      templateVersion: "1.0.0",
+      applicationModules: [{ id: "auth-jwt", version: "1.0.0" }],
+    });
+
+    const r = analyzeUpgradeDryRun(proj, templatesRoot);
+    expect(r.errors).toHaveLength(0);
+    const app = r.components.find((c) => c.label === "app:auth-jwt");
+    expect(app?.compare).toBe("behind");
+    expect(app?.behindBump).toBe("patch");
+    expect(upgradeDryRunExitCode(r)).toBe(1);
+    fs.rmSync(base, { recursive: true, force: true });
+  });
+
+  it("applicationModules com id desconhecido → errors[] sem componente app", () => {
+    const base = fs.mkdtempSync(path.join(os.tmpdir(), "pf-up-appmod-unk-"));
+    const templatesRoot = path.join(base, "templates");
+    writeTemplateJson(
+      path.join(templatesRoot, "api-node-express"),
+      "api-node-express",
+      "1.0.0",
+    );
+    const proj = path.join(base, "app");
+    writeProjectMeta(proj, {
+      templateVersion: "1.0.0",
+      applicationModules: [{ id: "not-in-catalog", version: "1.0.0" }],
+    });
+
+    const r = analyzeUpgradeDryRun(proj, templatesRoot);
+    expect(r.errors.some((e) => e.includes("not-in-catalog"))).toBe(true);
+    expect(r.components.some((c) => c.label.startsWith("app:"))).toBe(false);
+    expect(upgradeDryRunExitCode(r)).toBe(1);
+    fs.rmSync(base, { recursive: true, force: true });
+  });
 });
 
 describe("serializeUpgradeDryRunReport", () => {
@@ -204,6 +385,29 @@ describe("serializeUpgradeDryRunReport", () => {
     expect(payload.exitCode).toBe(1);
     expect(payload.upgradeStatus).toBe("BEHIND");
     expect(payload.worstRisk).toBe("HIGH");
+    fs.rmSync(base, { recursive: true, force: true });
+  });
+
+  it("JSON inclui componente app:* quando há applicationModules", () => {
+    const base = fs.mkdtempSync(path.join(os.tmpdir(), "pf-up-ser-app-"));
+    const templatesRoot = path.join(base, "templates");
+    writeTemplateJson(
+      path.join(templatesRoot, "api-node-express"),
+      "api-node-express",
+      "1.0.0",
+    );
+    writeFactoryAppModule(templatesRoot, "swagger-rich", "1.1.0");
+    const proj = path.join(base, "app");
+    writeProjectMeta(proj, {
+      templateVersion: "1.0.0",
+      applicationModules: [{ id: "swagger-rich", version: "1.1.0" }],
+    });
+    const r = analyzeUpgradeDryRun(proj, templatesRoot);
+    const payload = serializeUpgradeDryRunReport(r) as Record<string, unknown>;
+    const components = payload.components as { label: string; compare: string }[];
+    expect(components.some((c) => c.label === "app:swagger-rich" && c.compare === "equal")).toBe(
+      true,
+    );
     fs.rmSync(base, { recursive: true, force: true });
   });
 });
