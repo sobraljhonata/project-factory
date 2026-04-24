@@ -303,6 +303,30 @@ describe("analyzeUpgradeDryRun", () => {
     fs.rmSync(base, { recursive: true, force: true });
   });
 
+  it("applicationModules observability-basic behind em PATCH quando factory 1.0.1 e projeto 1.0.0", () => {
+    const base = fs.mkdtempSync(path.join(os.tmpdir(), "pf-up-obs-patch-"));
+    const templatesRoot = path.join(base, "templates");
+    writeTemplateJson(
+      path.join(templatesRoot, "api-node-express"),
+      "api-node-express",
+      "1.0.0",
+    );
+    writeFactoryAppModule(templatesRoot, "observability-basic", "1.0.1");
+    const proj = path.join(base, "app");
+    writeProjectMeta(proj, {
+      templateVersion: "1.0.0",
+      applicationModules: [{ id: "observability-basic", version: "1.0.0" }],
+    });
+
+    const r = analyzeUpgradeDryRun(proj, templatesRoot);
+    expect(r.errors).toHaveLength(0);
+    const app = r.components.find((c) => c.label === "app:observability-basic");
+    expect(app?.compare).toBe("behind");
+    expect(app?.behindBump).toBe("patch");
+    expect(upgradeDryRunExitCode(r)).toBe(1);
+    fs.rmSync(base, { recursive: true, force: true });
+  });
+
   it("applicationModules auth-jwt behind em PATCH quando factory 1.0.1 e projeto 1.0.0", () => {
     const base = fs.mkdtempSync(path.join(os.tmpdir(), "pf-up-authjwt-patch-"));
     const templatesRoot = path.join(base, "templates");
