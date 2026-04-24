@@ -149,7 +149,7 @@ function buildCreateProgram(): Command {
     )
     .option(
       "--module <lista>",
-      "Módulos opcionais de aplicação (V3), vírgula: swagger-rich, observability-basic, auth-jwt",
+      "Módulos opcionais de aplicação (V3), vírgula: swagger-rich, observability-basic, auth-jwt, rate-limit-basic",
     )
     .option(
       "--preset <id>",

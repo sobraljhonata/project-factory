@@ -6,6 +6,8 @@ O arquivo **`.project-factory.json`** (raiz) registra o produto gerador, versõe
 
 **Arquitetura:** `src/core/` é só infraestrutura mínima; regras de negócio vão em `src/modules/`. JWT e HATEOAS opcionais estão em `src/lib/` — ver [docs/CORE.md](docs/CORE.md).
 
+**Contrato HTTP (ordem de middlewares, envelopes JSON, CORS/rate limit):** no repositório **project-factory** (gerador), ficheiro `docs/web-core-contract.md` — **não** é copiado para o app gerado; consulta-o no clone do factory ao alinhar middlewares ou respostas API.
+
 ## Desenvolvimento local
 
 ```bash

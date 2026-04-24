@@ -1,6 +1,6 @@
 # Módulos opcionais de aplicação (convenção V3.2.1+ / V3.4)
 
-Este documento formaliza o padrão **leve** usado pelo factory para módulos sob `templates/application-modules/<id>/`, com exemplos **`swagger-rich`** (OpenAPI), **`auth-jwt`** (Bearer JWT verify-only) e **`observability-basic`** (access log). Não há plugin system, auto-discovery nem hooks genéricos no core da CLI.
+Este documento formaliza o padrão **leve** usado pelo factory para módulos sob `templates/application-modules/<id>/`, com exemplos **`swagger-rich`** (OpenAPI), **`auth-jwt`** (Bearer JWT verify-only), **`observability-basic`** (access log) e **`rate-limit-basic`** (limite in-process por IP). Não há plugin system, auto-discovery nem hooks genéricos no core da CLI.
 
 ## Quem precisa ler
 
@@ -80,14 +80,22 @@ suficiente — **sem** framework, **sem** registry em runtime. Só introduzir qu
 - Costura → **só** `middlewares.ts` (após `correlationIdMiddleware`; `require` condicional)
 - Drift → bump `module.json` quando o formato de log ou exclusões (`/health`, `/ready`, `/ping`) mudarem
 
-## 9. Próximos módulos
+## 9. Exemplo mental: `rate-limit-basic`
+
+- Catálogo → `application-modules/rate-limit-basic`
+- Assets → `rate-limit-middleware.ts`, `README.md`, testes no módulo
+- Costura → **só** `middlewares.ts` (após **CORS**, antes dos body parsers; `require` condicional)
+- Drift → bump `module.json` quando limites, bypass ou formato 429 mudarem
+- **Limitações honestas:** in-process, não distribuído, não anti-DDoS — ver README do módulo
+
+## 10. Próximos módulos
 
 Manter o mesmo desenho: README claro, assets sob `src/lib/project-factory-modules/<id>/`, costura mínima no stack, semver em `module.json`. Fora de escopo: módulos remotos, dependências entre módulos, registry em runtime, AST, plugin system.
 
-## 10. Referências no código
+## 11. Referências no código
 
 - Cópia e metadata: `cli/src/generate.ts` (loop `appModules`, `readApplicationModuleManifest`).
 - Catálogo: `cli/src/app-modules-catalog.ts`.
 - Drift: `cli/src/upgrade-dry-run.ts` (componentes `app:<id>`).
-- Exemplos: `templates/application-modules/swagger-rich/`, `templates/application-modules/auth-jwt/`, `templates/application-modules/observability-basic/`.
-- Costuras: `templates/api-node-express/src/core/config/swagger.ts`; `env.ts` + `middlewares.ts` (auth-jwt); `middlewares.ts` (observability-basic).
+- Exemplos: `templates/application-modules/swagger-rich/`, `templates/application-modules/auth-jwt/`, `templates/application-modules/observability-basic/`, `templates/application-modules/rate-limit-basic/`.
+- Costuras: `templates/api-node-express/src/core/config/swagger.ts`; `env.ts` + `middlewares.ts` (auth-jwt); `middlewares.ts` (observability-basic, rate-limit-basic).

@@ -170,6 +170,41 @@ describe("runCreateCommand", () => {
     fs.rmSync(base, { recursive: true, force: true });
   });
 
+  it("com --yes --module rate-limit-basic copia módulo, metadata e costura em middlewares", async () => {
+    const base = fs.mkdtempSync(path.join(os.tmpdir(), "pf-cr-rl-"));
+    const errSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    const logSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+
+    const code = await runCreateCommand(
+      [
+        "rl-mod",
+        "--yes",
+        "--package-name",
+        "rl-mod",
+        "--module",
+        "rate-limit-basic",
+      ],
+      { cwd: base },
+    );
+
+    expect(code).toBe(0);
+    const targetDir = path.join(base, "rl-mod");
+    expect(
+      fs.existsSync(
+        path.join(targetDir, "src/lib/project-factory-modules/rate-limit-basic/rate-limit-middleware.ts"),
+      ),
+    ).toBe(true);
+    const mid = fs.readFileSync(path.join(targetDir, "src/core/config/middlewares.ts"), "utf8");
+    expect(mid).toContain("registerRateLimit");
+    const raw = fs.readFileSync(path.join(targetDir, ".project-factory.json"), "utf8");
+    const meta = JSON.parse(raw) as { applicationModules: { id: string; version: string }[] };
+    expect(meta.applicationModules).toEqual([{ id: "rate-limit-basic", version: "1.0.1" }]);
+
+    logSpy.mockRestore();
+    errSpy.mockRestore();
+    fs.rmSync(base, { recursive: true, force: true });
+  });
+
   it("com --yes --json e nome de pacote inválido emite JSON de erro", async () => {
     const base = fs.mkdtempSync(path.join(os.tmpdir(), "pf-cr-badpkg-"));
     const spy = jest.spyOn(console, "log").mockImplementation(() => {});

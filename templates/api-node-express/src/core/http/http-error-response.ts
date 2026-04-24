@@ -19,14 +19,20 @@ export const errorResponse = (
   code: string,
   message: string,
   correlationId?: string,
-  details?: unknown
-): HttpResponse<ErrorBody> => ({
-  statusCode,
-  body: {
-    error: { code, message, details },
-    meta: { correlationId: ensureCorrelationId(correlationId) },
-  },
-});
+  details?: unknown,
+): HttpResponse<ErrorBody> => {
+  const error: ErrorBody["error"] = { code, message };
+  if (details !== undefined) {
+    error.details = details;
+  }
+  return {
+    statusCode,
+    body: {
+      error,
+      meta: { correlationId: ensureCorrelationId(correlationId) },
+    },
+  };
+};
 
 export const mapErrorToHttpResponse = (
   error: unknown,

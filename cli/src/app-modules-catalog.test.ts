@@ -74,5 +74,20 @@ describe("catálogo APPLICATION_MODULES vs templates/", () => {
         expect(fs.existsSync(p)).toBe(true);
       });
     }
+
+    if (moduleId === "rate-limit-basic") {
+      it(`${moduleId} inclui rate-limit-middleware.ts`, () => {
+        const p = path.join(
+          templatesRoot,
+          dir,
+          "src",
+          "lib",
+          "project-factory-modules",
+          moduleId,
+          "rate-limit-middleware.ts",
+        );
+        expect(fs.existsSync(p)).toBe(true);
+      });
+    }
   }
 });
