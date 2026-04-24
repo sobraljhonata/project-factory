@@ -23,7 +23,21 @@ function isProjectFactoryObservabilityBasicModuleInstalled(): boolean {
   return fs.existsSync(`${base}.js`) || fs.existsSync(`${base}.ts`);
 }
 
+function isProjectFactoryRateLimitBasicModuleInstalled(): boolean {
+  const base = path.join(
+    __dirname,
+    "..",
+    "..",
+    "lib",
+    "project-factory-modules",
+    "rate-limit-basic",
+    "rate-limit-middleware",
+  );
+  return fs.existsSync(`${base}.js`) || fs.existsSync(`${base}.ts`);
+}
+
 export default (app: Express): void => {
+  // Web Core Contract (V3.5.0+): ordem de middlewares, envelopes JSON (erro V3.5.1; query V3.5.2; safeHeaders V3.5.3), módulos opcionais — docs/web-core-contract.md na raiz do repo project-factory.
   // Ordem importa:
   // 1) Segurança básica
   app.disable("x-powered-by");
@@ -51,6 +65,24 @@ export default (app: Express): void => {
 
   // 2) CORS antes dos parsers (para OPTIONS retornar rápido)
   app.use(cors);
+
+  // 2b) Módulo opcional rate-limit-basic (V1.0.1+): após CORS para 429 incluir cabeçalhos CORS em browsers
+  if (isProjectFactoryRateLimitBasicModuleInstalled()) {
+    const modPath = path.join(
+      __dirname,
+      "..",
+      "..",
+      "lib",
+      "project-factory-modules",
+      "rate-limit-basic",
+      "rate-limit-middleware",
+    );
+    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires -- módulo opcional copiado para src/lib/…
+    const { registerRateLimit } = require(modPath) as {
+      registerRateLimit: (a: Express) => void;
+    };
+    registerRateLimit(app);
+  }
 
   // 3) Body parsers
   app.use(...bodyParser);

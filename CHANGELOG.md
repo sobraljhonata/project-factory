@@ -1,12 +1,31 @@
 
 # Changelog
 
-Atualize:
-
 ## [0.1.0-beta.1]
 
-## Added
+### Fecho operacional — fase backend / API (product-ops, sem alteração de runtime)
 
+- **Estado do produto (comunicação):** README com **Beta Internal Stable** — beta interna com fase **backend/API** do stack `api-node-express` considerada **encerrada** (Web Core **V3.5.3**, template **1.0.8**).
+- **Novos documentos:** [docs/adoption-playbook.md](docs/adoption-playbook.md) (adopção e CI mínimo), [docs/versioning-policy.md](docs/versioning-policy.md) (regras de bump; complementa [VERSIONING.md](docs/VERSIONING.md)), [docs/roadmap.md](docs/roadmap.md) (prioridades curtas + secção **próximo capítulo: frontend factory** — não iniciado, sem datas).
+- **Índice:** [docs/README.md](docs/README.md) actualizado com links aos três ficheiros acima.
+
+### Resumo consolidado da linha V3.5 (referência única)
+
+| Versão stack | Marco |
+|--------------|--------|
+| **1.0.5** | V3.5.0 — Web Core Contract (doc + alinhamento inicial). |
+| **1.0.6** | V3.5.1 — envelope de erro único (`AppError`, subclasses, `http-helper` legacy, `errorResponse`). |
+| **1.0.7** | V3.5.2 — query contract (`paginationQuerySchema`, `sortQuerySchema`, JSDoc `validateQuery`). |
+| **1.0.8** | V3.5.3 — `safeHeaders` / `pickSafeHeaders` no adaptador; `headers` cru mantido (deprecated no tipo). |
+
+### Added
+
+- **V3.5.3 (Safe Headers Contract):** tipo **`SafeHeaders`** e campo opcional **`safeHeaders`** em `HttpRequest`; **`pickSafeHeaders`** / **`maskAuthorizationHeader`** em `templates/api-node-express/src/core/http/safe-headers.ts` (re-export `@/core/http`); **`express-route-adapter`** preenche `safeHeaders` e mantém **`headers`** cru com JSDoc **deprecated**; documentação §9 em [docs/web-core-contract.md](docs/web-core-contract.md); testes `safe-headers.spec.ts` e `express-route-adapter.spec.ts`. **Sem** remover `headers`, **sem** alterar **`auth-jwt`**. Stack **`api-node-express` 1.0.8**.
+- **V3.5.2 (Query Contract Consolidation):** schemas Zod reutilizáveis `paginationQuerySchema` e `sortQuerySchema` em `templates/api-node-express/src/core/http/schemas/query-contract.ts` (re-export `@/core/http`); JSDoc em `validateQuery` (strict opt-in por rota, filtros pelo schema, 400 `INVALID_QUERY`); documentação e exemplo mínimo em [docs/web-core-contract.md](docs/web-core-contract.md) (§7–§8); testes em `test/unit/core/http/query-contract.spec.ts`. **Sem** strict global, **sem** mudança em massa de rotas. Stack **`api-node-express` 1.0.7**.
+- **V3.5.1 (Error Contract Consolidation):** runtime do template `api-node-express` alinhado a [docs/web-core-contract.md](docs/web-core-contract.md) — subclasses mínimas de `AppError` (`UnauthorizedError`, `ForbiddenError`, `NotFoundError`, `ConflictError`, `ValidationError` em `src/core/errors/contract-errors.ts`); `http-helper.ts` documentado como legacy e reescrito como wrappers sobre `errorResponse` (envelope `{ error, meta }`); `errorResponse` omite `details` quando `undefined`; `unAuthorizedError` legado passa a estender `UnauthorizedError` preservando mensagem por defeito; testes unitários em `test/unit/core/errors` e `test/unit/core/helpers`; doc e contrato actualizados. Stack **`api-node-express` 1.0.6**.
+- **V3.5.0 (Web Core Contract, doc-only):** [docs/web-core-contract.md](docs/web-core-contract.md) — ordem oficial dos middlewares do template `api-node-express`, papel de cada um, módulos opcionais, CORS vs rate limit, envelopes de erro/sucesso, `AppError` / `http-resource`, recomendações de query strict por rota e roadmap (paginação, `safeHeaders`); índice em [docs/README.md](docs/README.md); comentário de referência em `middlewares.ts`; README do template e raiz actualizados. Stack **`api-node-express` 1.0.5** (comentário + docs; comportamento HTTP inalterado).
+- **`rate-limit-basic` 1.0.1:** middleware **após CORS** (429 com cabeçalhos CORS em browsers); cabeçalho **`RateLimit-Reset`** (segundos até ao fim da janela); README (browsers/CORS, `__unknown__`); testes de janela, `__unknown__` e 429 consecutivos. Stack **`api-node-express` 1.0.4**.
+- **Módulo `rate-limit-basic` 1.0.0:** rate limit **in-process** por IP (janela fixa O(1), eviction FIFO, `maxKeys`), bypass **`/health`**, **`/ready`**, **`/ping`**, **`OPTIONS`**, **429** JSON + **`Retry-After`**, cabeçalhos **`RateLimit-Limit`** / **`RateLimit-Remaining`**; **sem** Redis nem dependências novas; costura em **`middlewares.ts`**. Stack **`api-node-express` 1.0.3**.
 - **V3.4.1:** módulo **`observability-basic` 1.0.1** — `durationMs` com **`process.hrtime.bigint`**, `path` truncado a **512** caracteres com **`pathTruncated: true`** quando aplicável; README (cardinalidade, probes, OPTIONS/CORS); teste de **status 500**.
 - **V3.4:** módulo opcional **`observability-basic` 1.0.0** — middleware de **access log** estruturado (`event`, `method`, `path`, `statusCode`, `durationMs`, `correlationId`); `/health`, `/ready`, `/ping` a **debug**; costura **única** em **`middlewares.ts`** (após correlation id). Stack **`api-node-express` 1.0.2**.
 - **DX / docs (revisão):** links `docs/deployment/*` removidos/corrigidos nos README Terraform (`foundation`, `aurora-phase2`); âncora HTML estável para a secção Terraform no README raiz + link no [docs/README.md](docs/README.md); [docs/BETA_RELEASE_CHECKLIST.md](docs/BETA_RELEASE_CHECKLIST.md) reescrito (fim do bloco de código corrompido, headings duplicados); README do template `api-node-express` sem link morto para `docs/VERSIONING.md` no app gerado; [CONTRIBUTING.md](CONTRIBUTING.md) com link ao índice `docs/README.md`; alinhamento de texto em [BETA_SCOPE.md](docs/BETA_SCOPE.md) (`upgrade` aplicável vs `upgrade --dry-run`); título [application-modules.md](docs/application-modules.md) V3.2.1+.

@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { logger } from "@/core/config/logger";
-import { mapErrorToHttpResponse } from "@/core/http";
+import { mapErrorToHttpResponse, pickSafeHeaders } from "@/core/http";
 import { Controller, HttpRequest } from "@/core/protocols";
 
 const NO_CONTENT = 204;
@@ -15,6 +15,7 @@ const adaptRoute = (controller: Controller) => {
       params: req.params,
       query: req.query,
       validatedQuery: r.validatedQuery,
+      safeHeaders: pickSafeHeaders(req.headers),
       headers: req.headers,
       user: (req as any).user,
       correlationId: (req as any).correlationId,

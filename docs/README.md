@@ -8,9 +8,14 @@ Ponto de entrada para **toda** a documentação do repositório. O [README princ
 |-----------|----------|
 | [../README.md](../README.md) | Instalar, gerar o primeiro app, presets, módulos, `doctor` / `inspect` / `upgrade --dry-run`, smoke |
 | [BETA_SCOPE.md](BETA_SCOPE.md) | O que a beta promete e o que **não** promete |
+| [adoption-playbook.md](adoption-playbook.md) | Playbook de adopção: novo repo, repos existentes, CI mínimo, links ao contrato HTTP |
+| [versioning-policy.md](versioning-policy.md) | Política operacional de semver (CLI × template × infra/módulos); cruza com [VERSIONING.md](VERSIONING.md) |
+| [roadmap.md](roadmap.md) | Encerramento backend/API, prioridades curtas, **próximo capítulo: frontend factory** (placeholder honesto) |
+| [lessons-learned.md](lessons-learned.md) | **Lessons learned** da fase backend/API (Beta Internal Stable): acertos, custos, decisões, anti-patterns, heurísticas para o frontend factory |
 | [GENERATION_CONTRACT.md](GENERATION_CONTRACT.md) | Contrato mínimo do que um projeto “gerado com sucesso” deve ter |
 | [VERSIONING.md](VERSIONING.md) | `generatorVersion` vs `templateVersion`, metadata em `.project-factory.json` |
-| [application-modules.md](application-modules.md) | Módulos opcionais (`swagger-rich`, `auth-jwt`, `observability-basic`, …): estrutura, costura, drift |
+| [application-modules.md](application-modules.md) | Módulos opcionais (`swagger-rich`, `auth-jwt`, `observability-basic`, `rate-limit-basic`, …): estrutura, costura, drift |
+| [web-core-contract.md](web-core-contract.md) | **V3.5.3 — Web Core Contract:** ordem de middlewares do `api-node-express`, envelopes erro/sucesso, query contract, **`safeHeaders` / `pickSafeHeaders`** (§9), CORS vs rate limit e roadmap |
 
 ## Operar um projeto já gerado
 

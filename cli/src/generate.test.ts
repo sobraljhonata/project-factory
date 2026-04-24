@@ -111,7 +111,7 @@ describe("generateProject (integração leve)", () => {
     expect(meta.generator).toBe(PROJECT_FACTORY_PRODUCT_NAME);
     expect(meta.generatorVersion).toBeTruthy();
     expect(meta.template).toBe("api-node-express");
-    expect(meta.templateVersion).toBe("1.0.2");
+    expect(meta.templateVersion).toBe("1.0.8");
     expect(meta.generatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     expect(meta.infraTemplates).toEqual([]);
     expect(meta.applicationModules).toEqual([]);
@@ -298,6 +298,40 @@ describe("generateProject (integração leve)", () => {
     const raw = fs.readFileSync(path.join(targetDir, ".project-factory.json"), "utf8");
     const meta = JSON.parse(raw) as { applicationModules: { id: string; version: string }[] };
     expect(meta.applicationModules).toEqual([{ id: "auth-jwt", version: "1.0.0" }]);
+
+    fs.rmSync(tmp, { recursive: true, force: true });
+  });
+
+  it("copia rate-limit-basic e inclui costura em middlewares", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "pf-app-rl-"));
+    const targetDir = path.join(tmp, "rl-app");
+    generateProject({
+      targetDir,
+      infra: [],
+      appModules: ["rate-limit-basic"],
+      vars: {
+        PACKAGE_NAME: "rl-app",
+        PROJECT_SLUG: "rl-app",
+        API_TITLE: "RL App",
+        API_DESCRIPTION: "desc",
+        API_VERSION: "v1",
+        APP_PORT: "3000",
+        AWS_REGION: "us-east-1",
+      },
+    });
+
+    expect(
+      fs.existsSync(
+        path.join(targetDir, "src/lib/project-factory-modules/rate-limit-basic/rate-limit-middleware.ts"),
+      ),
+    ).toBe(true);
+    const midTs = fs.readFileSync(path.join(targetDir, "src/core/config/middlewares.ts"), "utf8");
+    expect(midTs).toContain("registerRateLimit");
+    expect(midTs).toContain("rate-limit-basic");
+
+    const raw = fs.readFileSync(path.join(targetDir, ".project-factory.json"), "utf8");
+    const meta = JSON.parse(raw) as { applicationModules: { id: string; version: string }[] };
+    expect(meta.applicationModules).toEqual([{ id: "rate-limit-basic", version: "1.0.1" }]);
 
     fs.rmSync(tmp, { recursive: true, force: true });
   });

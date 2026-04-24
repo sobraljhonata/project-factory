@@ -21,6 +21,10 @@ describe("parseApplicationModulesArg", () => {
     expect(parseApplicationModulesArg("auth-jwt")).toEqual(["auth-jwt"]);
   });
 
+  it("aceita rate-limit-basic", () => {
+    expect(parseApplicationModulesArg("rate-limit-basic")).toEqual(["rate-limit-basic"]);
+  });
+
   it("rejeita id desconhecido", () => {
     expect(() => parseApplicationModulesArg("nope")).toThrow(/Módulo de aplicação inválido/);
   });
