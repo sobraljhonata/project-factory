@@ -11,7 +11,7 @@ Ferramenta de **geração** de projetos Node.js + Express + TypeScript a partir 
 | Fluxo | Descrição |
 |--------|-----------|
 | **Gerar app novo** | A partir do clone do repositório `project-factory`, com `npm install`, `npm run build:cli` e `node cli/dist/cli.js <pasta> --yes --package-name <nome>` (ou modo interativo). Atalho: `npm run create-app -- <args>` (ver README). Destino: pasta **vazia** ou inexistente. |
-| **Flags documentadas** | `--yes`, `--package-name`, `--title`, `--infra`, `--region`, `--debug` conforme README e `--help`. |
+| **Flags documentadas** | `--yes`, `--package-name`, `--title`, `--infra`, `--preset`, `--module`, `--region`, `--debug`, `--json` (onde aplicável) conforme README e `--help`. |
 | **Stack atual** | Template `api-node-express` + camadas infra listadas na CLI **quando os diretórios existirem em `templates/`**. |
 | **Validação automática no factory** | `npm run test:cli` e `npm run smoke` antes de merge/release relevante. |
 
@@ -25,7 +25,7 @@ Ferramenta de **geração** de projetos Node.js + Express + TypeScript a partir 
 ## Limites claros (o que a beta não é)
 
 - **Não** é produto “estável” para consumo público sem revisão de release.
-- **Não** há comando `upgrade` nem migração automática de projetos já gerados — ver [UPGRADE_VISION.md](UPGRADE_VISION.md).
+- **Não** há comando `upgrade` que **aplique** alterações aos ficheiros do projeto gerado (migração automática). Existem **`upgrade --dry-run`** e **`inspect`** só leitura — ver README do factory e [UPGRADE_VISION.md](UPGRADE_VISION.md) para a visão de um `upgrade` aplicável futuro.
 - **Não** há suporte formal a versões de Node além das testadas no CI (hoje **Node 22** no workflow; README pede **Node 20+** — tratar como orientação; divergências podem existir).
 - **Infra Terraform**: na geração, apenas **cópia** de arquivos para o seu repositório; **não** há `plan`/`apply` nem checagem de credenciais AWS no fluxo do app. No **repositório do factory**, o CI pode rodar `npm run check:terraform` (`fmt` + `validate` em cópia gerada) — não substitui validação na sua conta.
 - **Camada `terraformRemoteState`**: deve existir em `templates/` (manifest + Terraform mínimo); sem pasta, a geração falha ao selecionar a camada.

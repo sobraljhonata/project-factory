@@ -212,6 +212,38 @@ export function diagnoseProject(root: string): DoctorReport {
         }
       }
     }
+
+    const appMods = meta.applicationModules;
+    if (appMods !== undefined) {
+      if (!Array.isArray(appMods)) {
+        addFinding(
+          findings,
+          "error",
+          '.project-factory.json: "applicationModules" deve ser um array.',
+        );
+      } else {
+        for (let i = 0; i < appMods.length; i++) {
+          const item = appMods[i];
+          if (
+            item === null ||
+            typeof item !== "object" ||
+            Array.isArray(item) ||
+            !isNonEmptyString((item as Record<string, unknown>).id) ||
+            !isNonEmptyString((item as Record<string, unknown>).version) ||
+            !SEMVER_RE.test(
+              String((item as Record<string, unknown>).version).trim(),
+            )
+          ) {
+            addFinding(
+              findings,
+              "error",
+              `.project-factory.json: applicationModules[${i}] inválido (esperado { id, version } com version semver).`,
+            );
+            break;
+          }
+        }
+      }
+    }
   }
 
   let pkg: Record<string, unknown> | null = null;

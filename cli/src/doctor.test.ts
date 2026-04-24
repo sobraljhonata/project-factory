@@ -26,6 +26,7 @@ function writeFixture(
     templateVersion: "1.0.0",
     generatedAt: "2026-01-01T00:00:00.000Z",
     infraTemplates: [] as { id: string; version: string }[],
+    applicationModules: [] as { id: string; version: string }[],
     ...overrides.meta,
   };
   const pkg = {
@@ -147,6 +148,15 @@ describe("diagnoseProject", () => {
     writeFixture(dir, { meta: { templateVersion: "1.0" } });
     const r = diagnoseProject(dir);
     expect(doctorExitCode(r)).toBe(1);
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("erro quando applicationModules não é array", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "pf-doc-appmod-"));
+    writeFixture(dir, { meta: { applicationModules: "bad" as unknown as [] } });
+    const r = diagnoseProject(dir);
+    expect(doctorExitCode(r)).toBe(1);
+    expect(r.findings.some((f) => f.message.includes("applicationModules"))).toBe(true);
     fs.rmSync(dir, { recursive: true, force: true });
   });
 });

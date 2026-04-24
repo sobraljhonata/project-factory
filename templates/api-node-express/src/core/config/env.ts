@@ -1,6 +1,21 @@
 import dotenv from "dotenv";
+import fs from "node:fs";
 import path from "node:path";
 import * as z from "zod";
+
+/** `true` quando os ficheiros do módulo opcional `auth-jwt` existem no projeto gerado. */
+export function isProjectFactoryAuthJwtModuleInstalled(): boolean {
+  const base = path.join(
+    __dirname,
+    "..",
+    "..",
+    "lib",
+    "project-factory-modules",
+    "auth-jwt",
+    "jwt-verify-middleware",
+  );
+  return fs.existsSync(`${base}.js`) || fs.existsSync(`${base}.ts`);
+}
 
 // Carrega o .env específico por ambiente (ex.: .env.test nos testes)
 const envFile = process.env.NODE_ENV ? `.env.${process.env.NODE_ENV}` : ".env";
@@ -46,6 +61,17 @@ const EnvSchema = z.object({
     .string()
     .min(16, "JWT_REFRESH_SECRET deve ter pelo menos 16 caracteres"),
   JWT_REFRESH_EXPIRES_IN: z.string().default("7d"),
+
+  /** Opcional: validação de `iss` nos tokens Bearer (módulo auth-jwt). */
+  JWT_ISSUER: z
+    .string()
+    .optional()
+    .transform((s) => (s !== undefined && s.trim() !== "" ? s.trim() : undefined)),
+  /** Opcional: validação de `aud` nos tokens Bearer (módulo auth-jwt). */
+  JWT_AUDIENCE: z
+    .string()
+    .optional()
+    .transform((s) => (s !== undefined && s.trim() !== "" ? s.trim() : undefined)),
 
   UPDATE_MODEL: z
     .union([z.string(), z.boolean()])
@@ -161,6 +187,19 @@ const EnvSchema = z.object({
         message:
           "Em produção, ADMIN_EMAIL deve estar definido no ambiente (ex.: variável plain na task ECS).",
         path: ["ADMIN_EMAIL"],
+      });
+    }
+  })
+  .superRefine((data, ctx) => {
+    if (!isProjectFactoryAuthJwtModuleInstalled()) {
+      return;
+    }
+    if (data.JWT_SECRET.length < 32) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Com o módulo opcional auth-jwt instalado, JWT_SECRET deve ter pelo menos 32 caracteres (entropia mínima). Gere com openssl rand -base64 48 ou equivalente.",
+        path: ["JWT_SECRET"],
       });
     }
   });
