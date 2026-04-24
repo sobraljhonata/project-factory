@@ -163,7 +163,7 @@ describe("runCreateCommand", () => {
     expect(mid).toContain("registerHttpAccessLog");
     const raw = fs.readFileSync(path.join(targetDir, ".project-factory.json"), "utf8");
     const meta = JSON.parse(raw) as { applicationModules: { id: string; version: string }[] };
-    expect(meta.applicationModules).toEqual([{ id: "observability-basic", version: "1.0.0" }]);
+    expect(meta.applicationModules).toEqual([{ id: "observability-basic", version: "1.0.1" }]);
 
     logSpy.mockRestore();
     errSpy.mockRestore();

@@ -303,7 +303,7 @@ describe("analyzeUpgradeDryRun", () => {
     fs.rmSync(base, { recursive: true, force: true });
   });
 
-  it("applicationModules observability-basic behind em PATCH quando factory 1.0.1 e projeto 1.0.0", () => {
+  it("applicationModules observability-basic behind em PATCH quando factory 1.0.2 e projeto 1.0.1", () => {
     const base = fs.mkdtempSync(path.join(os.tmpdir(), "pf-up-obs-patch-"));
     const templatesRoot = path.join(base, "templates");
     writeTemplateJson(
@@ -311,11 +311,11 @@ describe("analyzeUpgradeDryRun", () => {
       "api-node-express",
       "1.0.0",
     );
-    writeFactoryAppModule(templatesRoot, "observability-basic", "1.0.1");
+    writeFactoryAppModule(templatesRoot, "observability-basic", "1.0.2");
     const proj = path.join(base, "app");
     writeProjectMeta(proj, {
       templateVersion: "1.0.0",
-      applicationModules: [{ id: "observability-basic", version: "1.0.0" }],
+      applicationModules: [{ id: "observability-basic", version: "1.0.1" }],
     });
 
     const r = analyzeUpgradeDryRun(proj, templatesRoot);

@@ -216,7 +216,7 @@ describe("generateProject (integração leve)", () => {
     };
     expect(meta.applicationModules).toEqual([
       { id: "swagger-rich", version: "1.1.0" },
-      { id: "observability-basic", version: "1.0.0" },
+      { id: "observability-basic", version: "1.0.1" },
     ]);
 
     fs.rmSync(tmp, { recursive: true, force: true });

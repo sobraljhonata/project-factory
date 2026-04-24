@@ -46,8 +46,60 @@ describe("observability-basic access-log-middleware", () => {
       statusCode: 200,
       correlationId: "corr-test-1",
     });
+    expect(meta).not.toHaveProperty("pathTruncated");
     expect(typeof meta?.durationMs).toBe("number");
     expect((meta?.durationMs as number) >= 0).toBe(true);
+  });
+
+  it("com statusCode 500 regista info com status 500", () => {
+    const req = {
+      method: "POST",
+      path: "/api/v1/action",
+      correlationId: "c-500",
+    } as unknown as Request;
+
+    const res = new EventEmitter() as Response & EventEmitter;
+    res.statusCode = 500;
+
+    httpAccessLogMiddleware(req, res, jest.fn());
+    res.emit("finish");
+
+    expect(mockedLogger.info).toHaveBeenCalledTimes(1);
+    const [, meta] = mockedLogger.info.mock.calls[0];
+    expect(meta).toMatchObject({
+      event: "http_access",
+      method: "POST",
+      path: "/api/v1/action",
+      statusCode: 500,
+      correlationId: "c-500",
+    });
+  });
+
+  it("trunca path acima de 512 chars e define pathTruncated", () => {
+    const longPath = `/${"a".repeat(512)}`;
+    expect(longPath.length).toBe(513);
+
+    const req = {
+      method: "GET",
+      path: longPath,
+      correlationId: "c-long",
+    } as unknown as Request;
+
+    const res = new EventEmitter() as Response & EventEmitter;
+    res.statusCode = 200;
+
+    httpAccessLogMiddleware(req, res, jest.fn());
+    res.emit("finish");
+
+    expect(mockedLogger.info).toHaveBeenCalledTimes(1);
+    const [, meta] = mockedLogger.info.mock.calls[0];
+    expect((meta?.path as string).length).toBe(512);
+    expect(meta?.pathTruncated).toBe(true);
+    expect(meta).toMatchObject({
+      event: "http_access",
+      correlationId: "c-long",
+      statusCode: 200,
+    });
   });
 
   it("para /health usa logger.debug em vez de info", () => {
